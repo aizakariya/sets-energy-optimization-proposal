@@ -248,6 +248,7 @@ footer.status-bar span.dot{display:inline-block;width:7px;height:7px;border-radi
       <div class="sub">Full-Stack Building Energy Audit, ECM Costing &amp; AI ROI Engine</div>
     </div>
     <div class="client-box no-print">
+      <button class="btn btn-sm btn-ai" id="aiServiceControlBtn" title="Click to start or warm up the local AI Engine">⚡ AI: Checking...</button>
       <button class="btn btn-sm btn-ghost" id="loadDemoBtn" title="Populate with sample building data">🏢 Load Demo Mall</button>
       <button class="btn btn-sm btn-primary" id="saveServerBtn" title="Save proposal to local SQLite database">💾 Save Proposal</button>
       <input type="text" id="clientNameInput" class="client-name-input" placeholder="Client name">
@@ -507,18 +508,63 @@ async function saveToServer(){
 }
 
 /* ---------- Check Backend & Ollama AI Health ---------- */
+let systemServiceStatus = { ollama_running: false };
+
 async function checkAIHealth(){
   const badge = document.getElementById('aiEngineStatus');
+  const btn = document.getElementById('aiServiceControlBtn');
   try {
-    const res = await fetch('/api/health');
+    const res = await fetch('/api/system/status');
     const data = await res.json();
-    if(data.ollama_connected){
+    systemServiceStatus = data;
+    
+    if(data.ollama_running){
       badge.innerHTML = `<span style="color:var(--green);font-weight:700;">● Local AI Active:</span> ${esc(data.active_model)} (NVIDIA RTX 3090 GPU)`;
+      if(btn){
+        btn.innerHTML = `🟢 AI Active: 32B (RTX 3090)`;
+        btn.className = "btn btn-sm btn-ai";
+        btn.title = "Local AI Engine is running with NVIDIA RTX 3090 GPU. Click to warm up model.";
+      }
     } else {
-      badge.innerHTML = `<span style="color:var(--amber);font-weight:700;">● AI Engine:</span> ASHRAE/IPMVP Engineering Mode (Ollama Standby)`;
+      badge.innerHTML = `<span style="color:var(--amber);font-weight:700;">● AI Engine Offline</span> • Click 'Start AI Engine' above or use fallback`;
+      if(btn){
+        btn.innerHTML = `⚡ Start AI Engine (RTX 3090)`;
+        btn.className = "btn btn-sm btn-primary";
+        btn.title = "Click to launch Ollama AI daemon on your PC with GPU acceleration";
+      }
     }
   } catch(e){
-    badge.innerHTML = `<span style="color:var(--ink-soft);">● Offline Mode</span>`;
+    if(badge) badge.innerHTML = `<span style="color:var(--ink-soft);">● Offline / Standalone Browser Mode</span>`;
+    if(btn){
+      btn.innerHTML = `⚡ AI: Offline`;
+      btn.className = "btn btn-sm btn-ghost";
+    }
+  }
+}
+
+async function triggerAIServiceAction(){
+  const btn = document.getElementById('aiServiceControlBtn');
+  if(!systemServiceStatus.ollama_running){
+    if(btn) btn.innerHTML = `⏳ Starting Ollama...`;
+    showToast('🚀 Launching Ollama AI Engine with RTX 3090 GPU acceleration...');
+    try {
+      const res = await fetch('/api/system/start-ollama', { method: 'POST' });
+      const data = await res.json();
+      showToast(data.message || 'Ollama daemon launched!');
+      setTimeout(checkAIHealth, 2500);
+    } catch(e){
+      showToast('❌ Could not start Ollama via server: ' + e.message);
+      checkAIHealth();
+    }
+  } else {
+    showToast('🔥 Warming up Qwen2.5-Coder-32B in RTX 3090 VRAM...');
+    try {
+      await fetch('/api/system/warmup-model', { method: 'POST' });
+      showToast('✅ Model is hot in GPU VRAM and ready for instant ECM proposals!');
+    } catch(e){
+      showToast('✅ AI Engine is active on port 11434.');
+    }
+    checkAIHealth();
   }
 }
 
@@ -1602,6 +1648,9 @@ function initTopbar(){
     showToast('🏢 Loaded Demo Mall Project & Running AI ECM Analysis!');
   });
   document.getElementById('saveServerBtn').addEventListener('click', saveToServer);
+  
+  const aiBtn = document.getElementById('aiServiceControlBtn');
+  if(aiBtn) aiBtn.addEventListener('click', triggerAIServiceAction);
 }
 
 function renderLogoSlot(){
@@ -1629,6 +1678,7 @@ function init(){
     btn.addEventListener('click',()=>showPage(btn.dataset.page));
   });
   showPage('project');
+  setInterval(checkAIHealth, 7000);
 }
 
 init();

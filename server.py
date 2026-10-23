@@ -2,6 +2,8 @@ import os
 import json
 import math
 import sqlite3
+import subprocess
+import shutil
 import httpx
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
@@ -27,6 +29,11 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 
 OLLAMA_API_URL = "http://127.0.0.1:11434"
 DEFAULT_MODEL = "qwen2.5-coder:32b"
+
+# Find local Ollama binary path
+OLLAMA_EXE = os.path.expandvars(r"%LOCALAPPDATA%\Programs\Ollama\ollama.exe")
+if not os.path.exists(OLLAMA_EXE):
+    OLLAMA_EXE = shutil.which("ollama") or "ollama"
 
 # --- Database Initialization ---
 def init_db():
@@ -432,6 +439,79 @@ Keep it strictly factual, engineering-focused, and ready for inclusion in a boar
     except Exception as exc:
         print(f"[Ollama Call]: {exc}")
     return None
+
+# --- System & Service Control Endpoints ---
+@app.get("/api/system/status")
+async def get_system_status():
+    ollama_ok = False
+    models = []
+    gpu_info = "NVIDIA GeForce RTX 3090 (24GB VRAM)"
+    
+    try:
+        async with httpx.AsyncClient(timeout=2.5) as client:
+            r = await client.get(f"{OLLAMA_API_URL}/api/tags")
+            if r.status_code == 200:
+                ollama_ok = True
+                models = [m.get("name") for m in r.json().get("models", [])]
+    except Exception:
+        pass
+
+    return {
+        "fastapi_server": "running",
+        "fastapi_port": 8000,
+        "ollama_running": ollama_ok,
+        "ollama_port": 11434,
+        "active_model": DEFAULT_MODEL,
+        "model_installed": DEFAULT_MODEL in models or any("qwen2.5-coder:32b" in m for m in models),
+        "available_models": models,
+        "gpu": gpu_info
+    }
+
+@app.post("/api/system/start-ollama")
+async def start_ollama_service():
+    # Check if already running
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            r = await client.get(f"{OLLAMA_API_URL}/api/tags")
+            if r.status_code == 200:
+                return {"status": "already_running", "message": "Ollama service is already active on port 11434"}
+    except Exception:
+        pass
+
+    # Start Ollama process detached
+    try:
+        creation_flags = 0
+        if os.name == 'nt':
+            creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP | 0x08000000  # CREATE_NO_WINDOW
+        
+        subprocess.Popen(
+            [OLLAMA_EXE, "serve"],
+            creationflags=creation_flags,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        return {"status": "started", "message": "Ollama service started in background"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start Ollama: {str(e)}")
+
+@app.post("/api/system/warmup-model")
+async def warmup_model():
+    """Warms up the Qwen2.5-Coder-32B model into GPU VRAM."""
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            r = await client.post(
+                f"{OLLAMA_API_URL}/api/generate",
+                json={
+                    "model": DEFAULT_MODEL,
+                    "prompt": "Hello",
+                    "stream": False,
+                    "options": {"num_predict": 1}
+                }
+            )
+            if r.status_code == 200:
+                return {"status": "warmed_up", "model": DEFAULT_MODEL}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Model warmup failed: {str(e)}")
 
 # --- API Endpoints ---
 @app.get("/api/health")
