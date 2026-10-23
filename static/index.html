@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SETs Energy Optimization &amp; AI ECM Proposal Tool</title>
+<style>
+:root{
+  --teal:#1596a9; --teal-dark:#0f7683; --teal-darker:#0c5c66; --teal-light:#e5f5f7;
+  --ink:#16232b; --ink-soft:#4b5c66; --line:#dbe4e7; --bg:#f4f8f9; --card:#ffffff;
+  --amber:#c9820f; --red:#b3402f; --green:#1f8a4c; --purple:#6b4fbb; --purple-light:#f2eefc;
+  --radius:8px; --shadow:0 1px 3px rgba(15,40,45,.08), 0 1px 2px rgba(15,40,45,.06);
+  --font: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;}
+h1,h2,h3,h4{margin:0 0 4px;font-weight:600;letter-spacing:-.01em;}
+h2{font-size:19px;color:var(--teal-darker);}
+h3{font-size:15px;color:var(--ink);}
+p{margin:0 0 8px;color:var(--ink-soft);}
+input,select,textarea,button{font-family:inherit;font-size:13px;color:var(--ink);}
+input,select,textarea{
+  border:1px solid var(--line); border-radius:6px; padding:6px 8px; background:#fff; width:100%;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--teal); outline-offset:0; border-color:var(--teal);}
+label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px;}
+button{cursor:pointer;border:none;border-radius:6px;font-weight:600;transition:all .15s ease;}
+.field{margin-bottom:12px;}
+.grid{display:grid;gap:12px;}
+.grid-2{grid-template-columns:1fr 1fr;}
+.grid-3{grid-template-columns:1fr 1fr 1fr;}
+.grid-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+@media(max-width:800px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+/* ===== App shell ===== */
+#app{max-width:1320px;margin:0 auto;padding:0 20px 60px;}
+header.topbar{
+  position:sticky; top:0; z-index:50; background:#fff; border-bottom:2px solid var(--teal);
+  box-shadow:var(--shadow);
+}
+.topbar-inner{max-width:1320px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-logo{
+  width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg,var(--teal-darker),var(--teal));
+  color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;letter-spacing:-.5px;
+}
+.brand-text{font-size:11.5px;color:var(--ink-soft);line-height:1.25;}
+.brand-text b{color:var(--teal-darker);font-size:14px;display:block;}
+.topbar-title{flex:1;min-width:180px;}
+.topbar-title input{font-size:16px;font-weight:700;border:1px dashed transparent;background:transparent;padding:2px 4px;color:var(--teal-darker);}
+.topbar-title input:hover,.topbar-title input:focus{border-color:var(--line);background:#fff;}
+.topbar-title .sub{font-size:11.5px;color:var(--ink-soft);}
+.client-box{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.client-logo-slot{
+  width:46px;height:46px;border:1.5px dashed var(--line);border-radius:6px;display:flex;align-items:center;
+  justify-content:center;overflow:hidden;background:#fafcfc;flex-shrink:0;cursor:pointer;position:relative;
+}
+.client-logo-slot img{width:100%;height:100%;object-fit:contain;}
+.client-logo-slot span{font-size:9px;color:var(--ink-soft);text-align:center;padding:2px;}
+.client-name-input{width:155px;font-weight:600;}
+
+nav.tabs{
+  display:flex; gap:2px; overflow-x:auto; background:#fff; border-bottom:1px solid var(--line);
+  padding:0 20px; position:sticky; top:66px; z-index:49; box-shadow:0 1px 2px rgba(0,0,0,.03);
+}
+nav.tabs::-webkit-scrollbar{height:4px;}
+.tab-btn{
+  background:transparent;padding:12px 14px;font-size:13px;font-weight:600;color:var(--ink-soft);
+  border-bottom:3px solid transparent;white-space:nowrap;border-radius:0;
+}
+.tab-btn:hover{color:var(--teal-darker);background:var(--teal-light);}
+.tab-btn.active{color:var(--teal-darker);border-bottom-color:var(--teal);}
+.tab-btn.ai-tab{color:var(--purple);font-weight:700;}
+.tab-btn.ai-tab.active{color:var(--purple);border-bottom-color:var(--purple);background:var(--purple-light);}
+.tab-btn .badge{
+  display:inline-block;background:var(--teal);color:#fff;font-size:10px;border-radius:10px;
+  padding:1px 6px;margin-left:6px;font-weight:700;
+}
+
+main{padding-top:20px;}
+.page{display:none;}
+.page.active{display:block;animation:fade .22s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:18px;}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+.card-head .desc{font-size:12.5px;color:var(--ink-soft);max-width:720px;margin-top:2px;}
+.section-title{display:flex;align-items:center;gap:10px;}
+.section-title .icon{
+  width:32px;height:32px;border-radius:7px;background:var(--teal-light);color:var(--teal-darker);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+
+/* buttons */
+.btn{padding:8px 14px;border-radius:6px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--teal);color:#fff;}
+.btn-primary:hover{background:var(--teal-dark);}
+.btn-ai{background:linear-gradient(135deg,#6b4fbb,#1596a9);color:#fff;box-shadow:0 2px 6px rgba(107,79,187,.25);}
+.btn-ai:hover{opacity:.93;transform:translateY(-1px);}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink-soft);}
+.btn-ghost:hover{border-color:var(--teal);color:var(--teal-darker);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid #ecd1cb;}
+.btn-danger:hover{background:#fdf1ee;}
+.btn-sm{padding:5px 10px;font-size:11.5px;}
+.btn-add{background:var(--teal-light);color:var(--teal-darker);padding:8px 12px;border-radius:6px;font-size:12.5px;font-weight:700;margin-top:8px;}
+.btn-add:hover{background:#d3edf0;}
+.btn-icon{background:transparent;color:var(--ink-soft);padding:4px 7px;border-radius:5px;font-size:12px;}
+.btn-icon:hover{background:#f1f1f1;}
+.btn-icon.danger:hover{background:#fdf1ee;color:var(--red);}
+
+/* tables */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:7px;}
+table.edit-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:600px;}
+table.edit-table th{
+  background:var(--teal-light);color:var(--teal-darker);text-align:left;padding:8px 8px;font-weight:700;
+  font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;border-bottom:1px solid var(--line);
+}
+table.edit-table td{padding:4px 6px;border-bottom:1px solid #eef2f3;vertical-align:middle;}
+table.edit-table tbody tr:hover{background:#fbfdfd;}
+table.edit-table input,table.edit-table select{border:1px solid transparent;background:transparent;padding:5px 6px;border-radius:4px;min-width:70px;}
+table.edit-table input:hover,table.edit-table select:hover{border-color:var(--line);background:#fff;}
+table.edit-table input:focus,table.edit-table select:focus{border-color:var(--teal);background:#fff;}
+table.edit-table td.readonly{color:var(--ink-soft);font-variant-numeric:tabular-nums;font-weight:600;padding-left:8px;}
+table.edit-table td.col-actions{width:32px;text-align:center;}
+table.edit-table tfoot td{font-weight:700;background:#fafcfc;padding:8px 6px;border-top:2px solid var(--line);}
+
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.pill-good{background:#e6f6ec;color:var(--green);}
+.pill-warn{background:#fbf1e0;color:var(--amber);}
+.pill-bad{background:#fbeae6;color:var(--red);}
+.pill-ai{background:var(--purple-light);color:var(--purple);}
+
+/* KPI cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
+.kpi{background:linear-gradient(155deg,#fff,var(--teal-light));border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
+.kpi .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);font-weight:700;}
+.kpi .val{font-size:20px;font-weight:800;color:var(--teal-darker);margin-top:3px;}
+.kpi .sub{font-size:11px;color:var(--ink-soft);margin-top:1px;}
+
+/* attachments */
+.attach-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.attach-chip{
+  display:flex;align-items:center;gap:6px;background:#fafcfc;border:1px solid var(--line);border-radius:6px;
+  padding:6px 8px;font-size:12px;max-width:240px;
+}
+.attach-chip .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px;}
+.attach-chip button{background:transparent;color:var(--ink-soft);font-size:13px;padding:0 2px;}
+.attach-chip button:hover{color:var(--red);}
+.dropzone{
+  border:2px dashed var(--line);border-radius:8px;padding:16px;text-align:center;color:var(--ink-soft);
+  font-size:12.5px;cursor:pointer;transition:.15s;
+}
+.dropzone:hover,.dropzone.drag{border-color:var(--teal);background:var(--teal-light);}
+
+/* ECM cards */
+.ecm-card{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px;background:#fdfefe;}
+.ecm-card .ecm-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.ecm-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+.ecm-metrics .m{text-align:left;}
+.ecm-metrics .m .lbl{font-size:10px;color:var(--ink-soft);text-transform:uppercase;font-weight:700;letter-spacing:.03em;}
+.ecm-metrics .m .val{font-size:15px;font-weight:800;color:var(--teal-darker);}
+
+/* AI Recommendation Cards */
+.ai-rec-card{
+  border:1px solid #d8cef0;border-left:4px solid var(--purple);border-radius:8px;padding:16px;
+  margin-bottom:14px;background:#fff;box-shadow:var(--shadow);
+}
+.ai-rec-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;flex-wrap:wrap;}
+.ai-rec-title{font-size:15.5px;font-weight:700;color:var(--ink);}
+.ai-rationale{background:#f8f6fc;border-radius:6px;padding:10px 12px;font-size:12.5px;color:var(--ink-soft);margin:10px 0;}
+.ai-steps{margin:8px 0 0 18px;padding:0;font-size:12.5px;color:var(--ink-soft);}
+.ai-steps li{margin-bottom:3px;}
+
+.subservice{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:16px;background:#fcfdfd;}
+.subservice-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.subservice-head input.name{font-size:14px;font-weight:700;border:1px dashed transparent;background:transparent;max-width:280px;}
+.subservice-head input.name:hover,.subservice-head input.name:focus{border-color:var(--line);background:#fff;}
+
+.hint{font-size:11.5px;color:var(--ink-soft);background:var(--teal-light);border-radius:6px;padding:8px 10px;margin-bottom:12px;}
+.hint b{color:var(--teal-darker);}
+
+footer.status-bar{
+  position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:7px 20px;
+  font-size:11.5px;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:center;z-index:60;
+}
+footer.status-bar span.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;}
+
+.chart-box{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:16px;}
+.chart-box canvas{max-height:290px;}
+
+/* Report / print */
+.report-cover{text-align:center;padding:36px 20px;border-bottom:2px solid var(--teal);margin-bottom:24px;}
+.report-cover .logos{display:flex;justify-content:center;align-items:center;gap:30px;margin-bottom:18px;}
+.report-cover .logos img{height:56px;object-fit:contain;}
+.report-cover h1{font-size:26px;color:var(--teal-darker);}
+.report-cover .meta{color:var(--ink-soft);font-size:13px;margin-top:6px;}
+.report-section{margin-bottom:26px;padding:0 16px;}
+.report-section h2{border-bottom:2px solid var(--teal-light);padding-bottom:6px;margin-bottom:12px;}
+
+@media print{
+  header.topbar,nav.tabs,footer.status-bar,.no-print{display:none !important;}
+  #app{max-width:100%;padding:0;}
+  body{background:#fff;font-size:11.5px;}
+  .page{display:none !important;}
+  #reportPrintArea{display:block !important;}
+  .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid;}
+  .print-header{
+    display:flex !important;justify-content:space-between;align-items:center;border-bottom:2px solid var(--teal);
+    padding-bottom:8px;margin-bottom:14px;
+  }
+  table.edit-table th{background:#eef7f8 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .chart-box{break-inside:avoid;}
+}
+#reportPrintArea{display:none;}
+
+.file-input-hidden{display:none;}
+.small-note{font-size:11px;color:var(--ink-soft);margin-top:4px;}
+.two-col-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+.session-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft);}
+.session-bar .who{font-weight:700;color:var(--teal-darker);}
+.role-pill{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:10px;background:var(--teal-light);color:var(--teal-darker);cursor:pointer;}
+.role-pill.admin{background:#fdeccb;color:#8a5a06;}
+.attribution{font-size:10.5px;color:var(--ink-soft);margin-top:6px;font-style:italic;}
+.source-pill{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.02em;}
+.source-pill.metered{background:#e6f6ec;color:var(--green);}
+.source-pill.calculated{background:#fbf1e0;color:var(--amber);}
+.source-pill.none{background:#fbeae6;color:var(--red);}
+
+/* Toast notification */
+#toastBox{position:fixed;bottom:44px;right:20px;z-index:250;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--ink);color:#fff;padding:10px 16px;border-radius:7px;font-size:12.5px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.2);animation:fade .2s ease;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-logo">SETs</div>
+      <div class="brand-text"><b>SETs</b>Energy Optimization &amp; AI Proposal</div>
+    </div>
+    <div class="topbar-title">
+      <input type="text" id="projectTitleInput" placeholder="Project / Site Name (Click to edit)">
+      <div class="sub">Full-Stack Building Energy Audit, ECM Costing &amp; AI ROI Engine</div>
+    </div>
+    <div class="client-box no-print">
+      <button class="btn btn-sm btn-ghost" id="loadDemoBtn" title="Populate with sample building data">🏢 Load Demo Mall</button>
+      <button class="btn btn-sm btn-primary" id="saveServerBtn" title="Save proposal to local SQLite database">💾 Save Proposal</button>
+      <input type="text" id="clientNameInput" class="client-name-input" placeholder="Client name">
+      <div class="client-logo-slot" id="clientLogoSlot" title="Click to upload client logo"><span>Client<br>Logo</span></div>
+      <input type="file" id="clientLogoFile" accept="image/*" class="file-input-hidden">
+    </div>
+    <div class="session-bar no-print" id="sessionBar"></div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabNav">
+  <button class="tab-btn active" data-page="project">1. Project Info</button>
+  <button class="tab-btn" data-page="hvac">2. HVAC Plant</button>
+  <button class="tab-btn" data-page="lighting">3. Lighting</button>
+  <button class="tab-btn" data-page="other">4. Other Services</button>
+  <button class="tab-btn" data-page="consumption">5. Energy Baseline</button>
+  <button class="tab-btn" data-page="benchmark">6. Benchmarking</button>
+  <button class="tab-btn" data-page="costing" id="tabCosting">7. Cost Estimation</button>
+  <button class="tab-btn ai-tab" data-page="ai">✨ 8. AI ECM Recommender</button>
+  <button class="tab-btn" data-page="summary">9. ECM &amp; ROI Summary<span class="badge" id="ecmCountBadge">0</span></button>
+  <button class="tab-btn" data-page="report">10. Proposal Report / PDF</button>
+</nav>
+
+<main>
+  <div class="page active" id="page-project"></div>
+  <div class="page" id="page-hvac"></div>
+  <div class="page" id="page-lighting"></div>
+  <div class="page" id="page-other"></div>
+  <div class="page" id="page-consumption"></div>
+  <div class="page" id="page-benchmark"></div>
+  <div class="page" id="page-costing"></div>
+  <div class="page" id="page-ai"></div>
+  <div class="page" id="page-summary"></div>
+  <div class="page" id="page-report"></div>
+</main>
+
+</div>
+
+<div id="reportPrintArea"></div>
+<div id="toastBox"></div>
+
+<footer class="status-bar no-print">
+  <div><span class="dot"></span><span id="saveStatus">Ready • Local SQLite + Browser Storage Active</span></div>
+  <div id="aiEngineStatus">Checking Local AI Engine (Qwen2.5-Coder-32B)...</div>
+</footer>
+
+<script src="/static/chart.umd.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ---------- Utilities ---------- */
+let uidCounter = 1;
+function uid(){ return 'id'+(Date.now().toString(36))+(uidCounter++).toString(36); }
+function num(v,d){ const n=parseFloat(v); return isNaN(n)?(d===undefined?0:d):n; }
+function fmt(n,dec){
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  dec = dec===undefined?0:dec;
+  return Number(n).toLocaleString(undefined,{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function fmtMoney(n,sym){
+  sym = sym||(state.project.currency||'AED');
+  if(n===null||n===undefined||isNaN(n)) return '—';
+  return sym+' '+fmt(n,0);
+}
+function pct(n,dec){ if(n===null||n===undefined||isNaN(n)) return '—'; return fmt(n,dec===undefined?1:dec)+'%'; }
+function esc(s){ return (s===undefined||s===null)?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function debounce(fn,ms){ let t; return function(...a){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a),ms); }; }
+
+function showToast(msg){
+  const box = document.getElementById('toastBox');
+  const d = document.createElement('div');
+  d.className = 'toast';
+  d.textContent = msg;
+  box.appendChild(d);
+  setTimeout(()=>d.remove(), 3400);
+}
+
+/* ---------- Financial Engine ---------- */
+const Fin = {
+  simplePayback(investment, annualSavings){
+    if(annualSavings<=0) return null;
+    return investment/annualSavings;
+  },
+  cashflows(investment, annualSavings, lifeYears, escalation){
+    escalation = escalation||0;
+    const cf=[-investment];
+    for(let y=1;y<=lifeYears;y++){
+      cf.push(annualSavings*Math.pow(1+escalation/100,y-1));
+    }
+    return cf;
+  },
+  npv(rate, cf){
+    let total=0;
+    for(let t=0;t<cf.length;t++){ total += cf[t]/Math.pow(1+rate/100,t); }
+    return total;
+  },
+  irr(cf){
+    if(cf.length<2) return null;
+    const hasPos = cf.some(v=>v>0), hasNeg = cf.some(v=>v<0);
+    if(!hasPos || !hasNeg) return null;
+    let lo=-99, hi=1000;
+    let fLo=Fin.npv(lo,cf), fHi=Fin.npv(hi,cf);
+    if(isNaN(fLo)||isNaN(fHi)||fLo*fHi>0) return null;
+    let mid, fMid;
+    for(let i=0;i<200;i++){
+      mid=(lo+hi)/2; fMid=Fin.npv(mid,cf);
+      if(Math.abs(fMid)<1e-6) break;
+      if((fLo<0 && fMid<0)||(fLo>0 && fMid>0)){ lo=mid; fLo=fMid; } else { hi=mid; }
+    }
+    return mid;
+  },
+  discountedPayback(rate, cf){
+    let cum=0;
+    for(let t=0;t<cf.length;t++){
+      const dcf = cf[t]/Math.pow(1+rate/100,t);
+      const prevCum = cum;
+      cum += dcf;
+      if(cum>=0 && t>0){
+        const frac = (0-prevCum)/dcf;
+        return (t-1)+frac;
+      }
+    }
+    return null;
+  },
+  roi(investment, totalSavings){
+    if(investment<=0) return null;
+    return ((totalSavings-investment)/investment)*100;
+  }
+};
+
+/* ---------- State & Demo Data ---------- */
+let currentUser = { username: 'zakariya', fullName: 'Zakariya Abdul Bari', role: 'admin' };
+let lastAIRecommendations = null;
+
+function defaultState(){
+  return {
+    id: 'proj_default',
+    project:{
+      name:'Al Barsha Mall Energy Optimization', client:'Al Barsha Retail Group',
+      address:'Sheikh Zayed Road, Al Barsha 1', city:'Dubai, UAE',
+      year:2026, buildingType:'Shopping Mall',
+      grossArea:38500, leaseType:'Master Leased Commercial', stories:4,
+      contacts:[{name:'Eng. Zakariya Abdul Bari — Lead Energy Auditor',phone:'zakariya@sets-energy.ae'}],
+      economicCriteria:'Target simple payback < 3.0 years, minimum IRR > 20%',
+      previousAudit:'ASHRAE Level 1 walk-through completed Q2 2026',
+      notes:'', currency:'AED', energyRate:0.44, discountRate:8, clientLogo:null
+    },
+    hvac:{
+      chillerEquipment:[
+        {device:'Air-Cooled Screw Chiller', qty:3, brand:'York', model:'YCIV0600', notes:'171 kW each, constant primary flow'},
+        {device:'Primary Chilled Water Pump', qty:4, brand:'Bell & Gossett', model:'e-1510', notes:'18.5 kW WEG motor, no VFD installed'}
+      ],
+      vfdList:[
+        {equipment:'FAHU Supply Fan', qty:4, powerKW:15, powerHP:20, notes:'Danfoss VLT HVAC Drive'}
+      ],
+      controllers:[
+        {type:'DDC Multi-Equipment Controller', qty:6, brand:'Automated Logic', model:'ME812u', notes:'BACnet MS/TP'},
+        {type:'Motorized Cooling Valve Actuator', qty:12, brand:'Siemens', model:'GCA161.1E', notes:'2-way modulating'}
+      ],
+      performance:{supplyTemp:'7.2',returnTemp:'11.0'},
+      airsideUnits:[
+        {category:'FAHU', tag:'FAHU-01 to 04', brandModel:'Carrier 39HQ', qty:4, fanType:'VFD', coolingValve:'2-Way Modulating', notes:'100% Outdoor Air'},
+        {category:'AHU', tag:'AHU-GF-01 to 08', brandModel:'Carrier 39M', qty:8, fanType:'Constant Volume', coolingValve:'3-Way Valve', notes:'Mall Atrium & Corridors'},
+        {category:'FCU', tag:'FCU-Big-01 to 25', brandModel:'Carrier 42CE', qty:25, fanType:'3-Speed', coolingValve:'2-Way On/Off', notes:'Retail Anchor Zones'},
+        {category:'FCU', tag:'FCU-Std-01 to 44', brandModel:'Carrier 42N', qty:44, fanType:'3-Speed', coolingValve:'2-Way On/Off', notes:'Common & Service Areas'}
+      ],
+      energyCalc:[
+        {id:uid(), name:'York Air-Cooled Chillers (x3)', ratedKW:171, qty:3, hoursDay:16, daysYear:365, loadPct:78, hasVFD:false, vfdSpeedPct:80, annualKWh:2336791},
+        {id:uid(), name:'Chilled Water Pumps (x4)', ratedKW:18.5, qty:4, hoursDay:18, daysYear:365, loadPct:90, hasVFD:false, vfdSpeedPct:80, annualKWh:437562},
+        {id:uid(), name:'FAHU & AHU Supply/Return Fans', ratedKW:11.0, qty:12, hoursDay:16, daysYear:365, loadPct:85, hasVFD:false, vfdSpeedPct:80, annualKWh:655248}
+      ],
+      ecms:[]
+    },
+    lighting:{
+      fixtures:[
+        {area:'Mall Corridors & Atrium', fixtureType:'4x18W T8 Fluorescent Troffer', qty:650, wattage:72, control:'Manual Switch', notes:'16 hrs/day operation'},
+        {area:'Basement Parking Levels B1-B2', fixtureType:'2x36W T8 Weatherproof', qty:420, wattage:72, control:'Manual Switch', notes:'24 hrs/day operation'},
+        {area:'Back of House & Service Corridors', fixtureType:'Compact Fluorescent Downlight', qty:310, wattage:36, control:'Manual Switch', notes:'No occupancy sensors'}
+      ],
+      energyCalc:[
+        {id:uid(), name:'Mall Corridors Fluorescent', ratedKW:0.072, qty:650, hoursDay:16, daysYear:365, loadPct:100, hasVFD:false, vfdSpeedPct:100, annualKWh:273312},
+        {id:uid(), name:'Basement Parking 24/7 Lighting', ratedKW:0.072, qty:420, hoursDay:24, daysYear:365, loadPct:100, hasVFD:false, vfdSpeedPct:100, annualKWh:264902}
+      ],
+      ecms:[]
+    },
+    other:{ services:[] },
+    consumption:{
+      electricity:Array.from({length:12},(_,i)=>({
+        month:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i],
+        current:0,previous:0,rate:0.44,amount:0
+      })),
+      water:Array.from({length:12},(_,i)=>({
+        month:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i],
+        current:0,previous:0,rate:0.01,amount:0
+      })),
+      gas:Array.from({length:12},()=>({month:'',current:0,previous:0,rate:0,amount:0})),
+      pmuMeters:[
+        {ref:'PMU-05', description:'Chiller-3 Main Feeder', serial:'SN-883920', location:'Roof Switchgear'},
+        {ref:'PMU-02', description:'MCC Panel - Chilled Water Pumps', serial:'SN-883914', location:'Plant Room'}
+      ],
+      btuMeters:[
+        {ref:'BTU-01', description:'Main Chilled Water Header', serial:'BTU-44210', location:'Pump Room Header'}
+      ]
+    },
+    benchmark:{
+      lowEUI:378, avgEUI:462, highEUI:580, lowWUI:658, avgWUI:1260, highWUI:1586,
+      monthly:Array.from({length:12},(_,i)=>({
+        month:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i],
+        energyKWh:[240000,255000,310000,390000,480000,560000,620000,615000,530000,420000,310000,255000][i],
+        waterL:3200000,
+        gcfa:38500
+      }))
+    },
+    costEstimation:{
+      items:[
+        {id:uid(), equipment:'Chiller Plant CPM / Optimization', qty:3, level:'M', high:125000, med:40000, low:25000},
+        {id:uid(), equipment:'AHU / FAHU Controls & DCV', qty:12, level:'M', high:30000, med:12000, low:4500},
+        {id:uid(), equipment:'FCU Smart Thermostat Retrofit', qty:69, level:'L', high:5000, med:2800, low:1500},
+        {id:uid(), equipment:'Chilled Water Pump VFD (≤45kW)', qty:4, level:'M', high:25000, med:15000, low:10000},
+        {id:uid(), equipment:'PICV Modulating Valves', qty:12, level:'L', high:12000, med:6500, low:4000},
+        {id:uid(), equipment:'LED Lighting & Motion Sensors (Lot)', qty:1, level:'M', high:95000, med:65000, low:40000}
+      ]
+    }
+  };
+}
+
+let state = defaultState();
+let filesCache = [];
+
+const saveLocalDebounced = debounce(()=>{
+  try {
+    localStorage.setItem('sets_energy_state_v2', JSON.stringify(state));
+    document.getElementById('saveStatus').textContent = 'All changes saved locally • ' + new Date().toLocaleTimeString();
+  } catch(e){}
+}, 400);
+
+function markDirty(){
+  document.getElementById('saveStatus').textContent = 'Saving changes…';
+  saveLocalDebounced();
+}
+
+async function saveToServer(){
+  try {
+    const res = await fetch('/api/projects', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(state)
+    });
+    if(res.ok){
+      showToast('✅ Proposal saved to local SQLite server database!');
+      markDirty();
+    }
+  } catch(e){
+    showToast('⚠️ Saved to browser storage (Server offline)');
+  }
+}
+
+/* ---------- Check Backend & Ollama AI Health ---------- */
+async function checkAIHealth(){
+  const badge = document.getElementById('aiEngineStatus');
+  try {
+    const res = await fetch('/api/health');
+    const data = await res.json();
+    if(data.ollama_connected){
+      badge.innerHTML = `<span style="color:var(--green);font-weight:700;">● Local AI Active:</span> ${esc(data.active_model)} (NVIDIA RTX 3090 GPU)`;
+    } else {
+      badge.innerHTML = `<span style="color:var(--amber);font-weight:700;">● AI Engine:</span> ASHRAE/IPMVP Engineering Mode (Ollama Standby)`;
+    }
+  } catch(e){
+    badge.innerHTML = `<span style="color:var(--ink-soft);">● Offline Mode</span>`;
+  }
+}
+
+/* ---------- Generic Editable Table ---------- */
+function editableTable(container, columns, rows, opts){
+  opts = opts||{};
+  function computeRow(r){ if(opts.compute) opts.compute(r); return r; }
+  function draw(){
+    rows.forEach(computeRow);
+    let html = '<div class="table-wrap"><table class="edit-table"><thead><tr>';
+    columns.forEach(c=>html+=`<th style="${c.width?('width:'+c.width+';'):''}">${c.label}</th>`);
+    html += '<th class="col-actions"></th></tr></thead><tbody>';
+    rows.forEach((row,i)=>{
+      html+='<tr data-i="'+i+'">';
+      columns.forEach(c=>{
+        if(c.readonly){
+          let v = c.format ? c.format(row) : row[c.key];
+          html+=`<td class="readonly">${v}</td>`;
+        } else if(c.type==='select'){
+          html+=`<td><select data-k="${c.key}">`+c.options.map(o=>`<option value="${esc(o)}" ${row[c.key]===o?'selected':''}>${esc(o)}</option>`).join('')+`</select></td>`;
+        } else if(c.type==='checkbox'){
+          html+=`<td style="text-align:center"><input type="checkbox" data-k="${c.key}" ${row[c.key]?'checked':''}></td>`;
+        } else {
+          html+=`<td><input type="${c.type||'text'}" ${c.step?('step="'+c.step+'"'):''} data-k="${c.key}" value="${esc(row[c.key]===undefined?'':row[c.key])}" placeholder="${esc(c.placeholder||'')}"></td>`;
+        }
+      });
+      html+=`<td class="col-actions"><button class="btn-icon danger" data-act="del">✕</button></td></tr>`;
+    });
+    html+='</tbody>';
+    if(opts.footer){ html += '<tfoot><tr>'+opts.footer(rows)+'</tr></tfoot>'; }
+    html+='</table></div>';
+    html+=`<button class="btn-add" data-act="add">+ Add Row</button>`;
+    container.innerHTML = html;
+
+    container.querySelectorAll('tbody tr').forEach(tr=>{
+      const i = +tr.dataset.i;
+      tr.querySelectorAll('[data-k]').forEach(el=>{
+        const k = el.dataset.k;
+        const ev = (el.type==='checkbox'||el.tagName==='SELECT')?'change':'input';
+        el.addEventListener(ev, ()=>{
+          rows[i][k] = el.type==='checkbox'? el.checked : (el.type==='number'? (el.value===''?'':parseFloat(el.value)) : el.value);
+          if(opts.compute) opts.compute(rows[i]);
+          if(opts.onChange) opts.onChange();
+          if(ev==='change' || opts.compute) draw();
+          markDirty();
+        });
+      });
+      tr.querySelector('[data-act="del"]').addEventListener('click',()=>{
+        rows.splice(i,1); draw(); if(opts.onChange) opts.onChange(); markDirty();
+      });
+    });
+    container.querySelector('[data-act="add"]').addEventListener('click',()=>{
+      const newRow = opts.newRow? opts.newRow(): {};
+      rows.push(newRow); draw(); if(opts.onChange) opts.onChange(); markDirty();
+    });
+  }
+  draw();
+  return { redraw: draw };
+}
+
+/* ---------- Energy Calculator Component (Affinity Law) ---------- */
+function renderEnergyCalc(container, rows, onChangeCb){
+  const cols = [
+    {key:'name', label:'Equipment / Area', placeholder:'e.g. Chilled Water Pump 1'},
+    {key:'ratedKW', label:'Rated Power (kW)', type:'number', step:'0.01'},
+    {key:'qty', label:'Qty', type:'number'},
+    {key:'hoursDay', label:'Op. Hrs/Day', type:'number', step:'0.5'},
+    {key:'daysYear', label:'Days/Year', type:'number'},
+    {key:'loadPct', label:'Load Factor %', type:'number', step:'1'},
+    {key:'hasVFD', label:'VFD?', type:'checkbox'},
+    {key:'vfdSpeedPct', label:'Avg VFD Speed %', type:'number', step:'1'},
+    {key:'annualKWh', label:'Annual Energy (kWh)', readonly:true, format:r=>fmt(r.annualKWh,0)}
+  ];
+  editableTable(container, cols, rows, {
+    newRow: ()=>({id:uid(), name:'', ratedKW:'', qty:1, hoursDay:12, daysYear:365, loadPct:85, hasVFD:false, vfdSpeedPct:80, annualKWh:0}),
+    compute: r=>{
+      const base = num(r.ratedKW)*num(r.qty,1);
+      let effKW = r.hasVFD ? base*Math.pow(num(r.vfdSpeedPct,100)/100,3) : base*(num(r.loadPct,100)/100);
+      r.annualKWh = effKW*num(r.hoursDay)*num(r.daysYear);
+    },
+    footer: rows=>{
+      const total = rows.reduce((s,r)=>s+num(r.annualKWh),0);
+      return `<td colspan="8" style="text-align:right">Total Calculated Annual Energy</td><td>${fmt(total,0)} kWh</td>`;
+    },
+    onChange: onChangeCb
+  });
+}
+
+/* ---------- ECM Manager Component ---------- */
+const ECM_CATEGORIES = [
+  'Chiller Plant Optimization','VFD Installation','AHU Controls Upgrade','Modulating PICV',
+  'Lighting Retrofit (LED)','FCU Controls Upgrade','New DDC Controller','Water Delta-T Control',
+  'Modulating Control Valve','Lighting Controls / Sensors','BMS / CPM Upgrade','Envelope / Insulation','Solar PV / Renewable','Other'
+];
+
+function computeSingleECM(e){
+  const rate = num(e.energyRate, state.project.energyRate||0.44);
+  let annualSavingsAED;
+  if(e.manualSavings){
+    annualSavingsAED = num(e.annualSavingsAED);
+  } else {
+    annualSavingsAED = num(e.annualSavingsKWh)*rate;
+    e.annualSavingsAED = annualSavingsAED;
+  }
+  const life = Math.max(1, num(e.lifeYears,10));
+  const rateD = num(e.discountRate, state.project.discountRate||8);
+  const cf = Fin.cashflows(num(e.investment), annualSavingsAED, life, 0);
+  const totalSavings = annualSavingsAED*life;
+  e._simplePayback = Fin.simplePayback(num(e.investment), annualSavingsAED);
+  e._roi = Fin.roi(num(e.investment), totalSavings);
+  e._npv = Fin.npv(rateD, cf);
+  e._irr = Fin.irr(cf);
+  e._dpp = Fin.discountedPayback(rateD, cf);
+  e._annualSavingsAED = annualSavingsAED;
+}
+
+function renderECMs(container, ecms, sectionLabel, onChangeCb){
+  function draw(){
+    ecms.forEach(computeSingleECM);
+    let html='';
+    ecms.forEach((e,i)=>{
+      html += `<div class="ecm-card" data-i="${i}">
+        <div class="ecm-top">
+          <div style="flex:1;min-width:200px;">
+            <label>Measure Description</label>
+            <input data-k="description" value="${esc(e.description||'')}" placeholder="e.g. Install VFD on secondary chilled water pumps">
+          </div>
+          <div style="width:220px;">
+            <label>Category</label>
+            <select data-k="category">${ECM_CATEGORIES.map(c=>`<option ${e.category===c?'selected':''}>${c}</option>`).join('')}</select>
+          </div>
+          <button class="btn-icon danger" data-act="del" title="Remove">✕</button>
+        </div>
+        <div class="grid grid-4">
+          <div class="field"><label>Estimated Cost (${state.project.currency||'AED'})</label><input type="number" data-k="investment" value="${e.investment||''}"></div>
+          <div class="field"><label>Expected Savings (kWh/yr)</label><input type="number" data-k="annualSavingsKWh" value="${e.annualSavingsKWh||''}" ${e.manualSavings?'disabled':''}></div>
+          <div class="field"><label>Energy Tariff (${state.project.currency||'AED'}/kWh)</label><input type="number" step="0.01" data-k="energyRate" value="${e.energyRate!==undefined?e.energyRate:''}" placeholder="${state.project.energyRate||0.44}"></div>
+          <div class="field"><label>Annual Cost Savings (${state.project.currency||'AED'})</label><input type="number" data-k="annualSavingsAED" value="${e._annualSavingsAED?e._annualSavingsAED.toFixed(0):0}" ${!e.manualSavings?'disabled':''}></div>
+        </div>
+        <div class="grid grid-4">
+          <div class="field"><label><input type="checkbox" style="width:auto" data-k="manualSavings" ${e.manualSavings?'checked':''}> Override Cost Savings Manually</label></div>
+          <div class="field"><label>Measure Life (years)</label><input type="number" data-k="lifeYears" value="${e.lifeYears||10}"></div>
+          <div class="field"><label>Discount Rate (%)</label><input type="number" step="0.1" data-k="discountRate" value="${e.discountRate!==undefined?e.discountRate:(state.project.discountRate||8)}"></div>
+          <div class="field"><label>Engineering Notes</label><input data-k="notes" value="${esc(e.notes||'')}"></div>
+        </div>
+        <div class="ecm-metrics">
+          <div class="m"><div class="lbl">Simple Payback</div><div class="val">${e._simplePayback?fmt(e._simplePayback,1)+' yrs':'—'}</div></div>
+          <div class="m"><div class="lbl">ROI (Life)</div><div class="val">${e._roi!==null?pct(e._roi,0):'—'}</div></div>
+          <div class="m"><div class="lbl">NPV</div><div class="val">${fmtMoney(e._npv)}</div></div>
+          <div class="m"><div class="lbl">IRR</div><div class="val">${e._irr!==null?pct(e._irr,1):'—'}</div></div>
+          <div class="m"><div class="lbl">Discounted Payback</div><div class="val">${e._dpp!==null?fmt(e._dpp,1)+' yrs':'—'}</div></div>
+        </div>
+      </div>`;
+    });
+    container.innerHTML = html + `<div class="two-col-actions"><button class="btn-add" data-act="addecm">+ Add Manual ECM</button><button class="btn btn-ai btn-sm" style="margin-top:8px;" data-act="goai">✨ Use AI to Suggest Best ECMs</button></div>`;
+    container.querySelectorAll('.ecm-card').forEach(card=>{
+      const i=+card.dataset.i;
+      card.querySelectorAll('[data-k]').forEach(el=>{
+        const k=el.dataset.k;
+        const ev = (el.type==='checkbox'||el.tagName==='SELECT')?'change':'input';
+        el.addEventListener(ev, ()=>{
+          if(el.type==='checkbox') ecms[i][k]=el.checked;
+          else if(el.type==='number') ecms[i][k]= el.value===''?'':parseFloat(el.value);
+          else ecms[i][k]=el.value;
+          computeSingleECM(ecms[i]);
+          if(ev==='change') draw();
+          else {
+            const m = card.querySelector('.ecm-metrics');
+            const e = ecms[i];
+            if(m) m.innerHTML = `
+              <div class="m"><div class="lbl">Simple Payback</div><div class="val">${e._simplePayback?fmt(e._simplePayback,1)+' yrs':'—'}</div></div>
+              <div class="m"><div class="lbl">ROI (Life)</div><div class="val">${e._roi!==null?pct(e._roi,0):'—'}</div></div>
+              <div class="m"><div class="lbl">NPV</div><div class="val">${fmtMoney(e._npv)}</div></div>
+              <div class="m"><div class="lbl">IRR</div><div class="val">${e._irr!==null?pct(e._irr,1):'—'}</div></div>
+              <div class="m"><div class="lbl">Discounted Payback</div><div class="val">${e._dpp!==null?fmt(e._dpp,1)+' yrs':'—'}</div></div>`;
+          }
+          if(onChangeCb) onChangeCb();
+          markDirty();
+        });
+      });
+      card.querySelector('[data-act="del"]').addEventListener('click',()=>{
+        ecms.splice(i,1); draw(); if(onChangeCb) onChangeCb(); markDirty();
+      });
+    });
+    container.querySelector('[data-act="addecm"]').addEventListener('click',()=>{
+      ecms.push({id:uid(), description:'', category:ECM_CATEGORIES[0], investment:'', annualSavingsKWh:'', lifeYears:10,
+        discountRate: state.project.discountRate||8, createdBy: currentUser.username, createdAt:Date.now()});
+      draw(); if(onChangeCb) onChangeCb(); markDirty();
+    });
+    container.querySelector('[data-act="goai"]').addEventListener('click',()=>showPage('ai'));
+  }
+  draw();
+}
+
+/* ---------- Helper Bindings ---------- */
+function getPath(obj, path){ return path.split('.').reduce((o,k)=>(o===undefined||o===null)?o:o[k], obj); }
+function setPath(obj, path, val){ const parts=path.split('.'); let o=obj; for(let i=0;i<parts.length-1;i++) o=o[parts[i]]; o[parts[parts.length-1]]=val; }
+function textField(label, path, opts){
+  opts=opts||{};
+  const val = getPath(state, path);
+  const type = opts.type||'text';
+  return `<div class="field"><label>${label}</label>
+    ${opts.textarea?`<textarea data-path="${path}" rows="${opts.rows||2}">${esc(val)}</textarea>`
+      : `<input type="${type}" ${opts.step?`step="${opts.step}"`:''} data-path="${path}" value="${esc(val===undefined||val===null?'':val)}" ${opts.placeholder?`placeholder="${esc(opts.placeholder)}"`:''}>`}
+  </div>`;
+}
+function bindFields(container){
+  container.querySelectorAll('[data-path]').forEach(el=>{
+    el.addEventListener(el.tagName==='SELECT'?'change':'input', ()=>{
+      const v = el.type==='number' ? (el.value===''?'':parseFloat(el.value)) : el.value;
+      setPath(state, el.dataset.path, v);
+      markDirty();
+      if(el.dataset.path==='project.name') document.getElementById('projectTitleInput').value = el.value;
+      if(el.dataset.path==='project.client') document.getElementById('clientNameInput').value = el.value;
+    });
+  });
+}
+
+/* ---------- Page 1: Project Info ---------- */
+function renderProjectPage(){
+  const el = document.getElementById('page-project');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div class="section-title"><span class="icon">🏢</span><div><h2>Building &amp; Site Information</h2><p class="desc">Enter your building profile. The AI ECM Recommender uses these parameters to size equipment retrofits and calculate ROI &amp; Payback.</p></div></div>
+        <button class="btn btn-ai" id="projToAiBtn">✨ Generate AI ECM Proposal</button>
+      </div>
+      <div class="grid grid-2">
+        ${textField('Project / Proposal Name','project.name')}
+        ${textField('Client / Organization Name','project.client')}
+      </div>
+      ${textField('Site Address','project.address')}
+      <div class="grid grid-4">
+        ${textField('City / Emirate','project.city')}
+        ${textField('Audit Year','project.year',{type:'number'})}
+        ${textField('Gross Floor Area (m²)','project.grossArea',{type:'number'})}
+        ${textField('No. of Stories','project.stories',{type:'number'})}
+      </div>
+      <div class="grid grid-3">
+        ${textField('Building Type / Function','project.buildingType',{placeholder:'e.g. Shopping Mall, Commercial Tower, Hospital'})}
+        ${textField('Lease / Operation Type','project.leaseType')}
+        ${textField('Currency','project.currency',{placeholder:'AED or USD'})}
+      </div>
+      <div class="grid grid-2">
+        ${textField('Electricity Tariff Rate (per kWh)','project.energyRate',{type:'number',step:'0.01'})}
+        ${textField('Discount Rate for NPV / Payback Analysis (%)','project.discountRate',{type:'number',step:'0.5'})}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">👥</span><h2>Key Stakeholders &amp; Contacts</h2></div></div>
+      <div id="contactsTable"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">📋</span><h2>Audit Context &amp; Executive Notes</h2></div></div>
+      <div class="grid grid-2">
+        ${textField('Client Economic Criteria for ECM Approval','project.economicCriteria',{textarea:true})}
+        ${textField('Previous Audit / Engineering Study Availability','project.previousAudit',{textarea:true})}
+      </div>
+      ${textField('Executive Summary / Proposal Notes (Included in PDF Report)','project.notes',{textarea:true,rows:4})}
+    </div>
+  `;
+  bindFields(el);
+  document.getElementById('projToAiBtn').addEventListener('click',()=>showPage('ai'));
+  editableTable(document.getElementById('contactsTable'),
+    [{key:'name',label:'Name & Position'},{key:'phone',label:'Phone / Email'}],
+    state.project.contacts, {newRow:()=>({name:'',phone:''})});
+}
+
+/* ---------- Page 2: HVAC ---------- */
+function equipmentCols(){
+  return [
+    {key:'device', label:'Device / Equipment'},
+    {key:'qty', label:'Qty', type:'number', width:'70px'},
+    {key:'brand', label:'Brand'},
+    {key:'model', label:'Model'},
+    {key:'notes', label:'Specifications / Notes'}
+  ];
+}
+function renderHvacPage(){
+  const el = document.getElementById('page-hvac');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">❄️</span><div><h2>HVAC — Chiller Plant Equipment</h2><p class="desc">Water-side equipment survey (chillers, primary/secondary pumps, cooling towers, pressurization).</p></div></div></div>
+      <div id="hvacEquip"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">⚙️</span><h2>Variable Frequency Drive (VFD) Inventory</h2></div></div>
+      <div id="hvacVfd"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">🎛️</span><h2>Controllers (BMS / DDC / Actuators)</h2></div></div>
+      <div id="hvacCtrl"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">🌡️</span><h2>Chilled Water Loop Performance (Delta-T)</h2></div></div>
+      <div class="grid grid-3">
+        <div class="field"><label>CHW Supply Temperature (°C)</label><input type="number" step="0.1" id="hvacSupplyTemp" value="${state.hvac.performance.supplyTemp}"></div>
+        <div class="field"><label>CHW Return Temperature (°C)</label><input type="number" step="0.1" id="hvacReturnTemp" value="${state.hvac.performance.returnTemp}"></div>
+        <div class="field"><label>Measured Delta-T (°C) [Design: 5.5°C]</label><input type="text" id="hvacDeltaT" readonly value="${(num(state.hvac.performance.returnTemp)-num(state.hvac.performance.supplyTemp)).toFixed(1)}"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">🏭</span><div><h2>Air-Side Units — FAHU / AHU / FCU</h2><p class="desc">Air handling equipment survey across zones.</p></div></div></div>
+      <div id="hvacAirside"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">🔢</span><div><h2>HVAC Energy Consumption Calculator</h2><p class="desc">Calculates annual kWh from rated power, operating hours, and load factor. Uses cubic affinity law (P ∝ N³) when VFD is enabled.</p></div></div></div>
+      <div class="hint">Formula: <b>Non-VFD</b> → Annual kWh = Rated kW × Qty × Load Factor% × Hrs/Day × Days/Year. &nbsp; <b>VFD</b> → Annual kWh = Rated kW × Qty × (Avg Speed%)³ × Hrs/Day × Days/Year.</div>
+      <div id="hvacEnergyCalc"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">💡</span><div><h2>Energy Conservation Measures (ECMs) — HVAC</h2><p class="desc">Proposed HVAC retrofits with automatic ROI, NPV, IRR, and Payback calculation.</p></div></div></div>
+      <div id="hvacEcms"></div>
+    </div>
+  `;
+  editableTable(document.getElementById('hvacEquip'), equipmentCols(), state.hvac.chillerEquipment, {newRow:()=>({device:'',qty:1,brand:'',model:'',notes:''})});
+  editableTable(document.getElementById('hvacVfd'),
+    [{key:'equipment',label:'Equipment'},{key:'qty',label:'Qty',type:'number',width:'70px'},{key:'powerKW',label:'Power (kW)',type:'number'},{key:'powerHP',label:'Power (HP)',type:'number'},{key:'notes',label:'Notes'}],
+    state.hvac.vfdList, {newRow:()=>({equipment:'',qty:1,powerKW:'',powerHP:'',notes:''})});
+  editableTable(document.getElementById('hvacCtrl'),
+    [{key:'type',label:'Controller Type'},{key:'qty',label:'Qty',type:'number',width:'70px'},{key:'brand',label:'Brand'},{key:'model',label:'Model'},{key:'notes',label:'Notes'}],
+    state.hvac.controllers, {newRow:()=>({type:'',qty:1,brand:'',model:'',notes:''})});
+
+  document.getElementById('hvacSupplyTemp').addEventListener('input',e=>{state.hvac.performance.supplyTemp=e.target.value; document.getElementById('hvacDeltaT').value=(num(state.hvac.performance.returnTemp)-num(e.target.value)).toFixed(1); markDirty();});
+  document.getElementById('hvacReturnTemp').addEventListener('input',e=>{state.hvac.performance.returnTemp=e.target.value; document.getElementById('hvacDeltaT').value=(num(e.target.value)-num(state.hvac.performance.supplyTemp)).toFixed(1); markDirty();});
+
+  editableTable(document.getElementById('hvacAirside'),
+    [{key:'category',label:'Category',type:'select',options:['FAHU','AHU','FCU']},
+     {key:'tag',label:'Unit Tag'},{key:'brandModel',label:'Brand / Model'},{key:'qty',label:'Qty',type:'number',width:'70px'},
+     {key:'fanType',label:'Fan Speed'},{key:'coolingValve',label:'Cooling Valve Type'},{key:'notes',label:'Notes'}],
+    state.hvac.airsideUnits, {newRow:()=>({category:'AHU',tag:'',brandModel:'',qty:1,fanType:'',coolingValve:'',notes:''})});
+
+  renderEnergyCalc(document.getElementById('hvacEnergyCalc'), state.hvac.energyCalc, refreshBadges);
+  renderECMs(document.getElementById('hvacEcms'), state.hvac.ecms, 'HVAC', refreshBadges);
+}
+
+/* ---------- Page 3: Lighting ---------- */
+function renderLightingPage(){
+  const el = document.getElementById('page-lighting');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">💡</span><div><h2>Lighting — Fixture Inventory</h2><p class="desc">Survey of existing luminaires, wattage, and control systems by zone.</p></div></div></div>
+      <div id="lightFixtures"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">🔢</span><h2>Lighting Energy Consumption Calculator</h2></div></div>
+      <div id="lightEnergyCalc"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">💡</span><h2>Energy Conservation Measures (ECMs) — Lighting</h2></div></div>
+      <div id="lightEcms"></div>
+    </div>
+  `;
+  editableTable(document.getElementById('lightFixtures'),
+    [{key:'area',label:'Location / Area'},{key:'fixtureType',label:'Fixture Type'},{key:'qty',label:'Qty',type:'number'},
+     {key:'wattage',label:'Wattage (W)',type:'number'},
+     {key:'control',label:'Control Type',type:'select',options:['Manual Switch','Occupancy Sensor','Timer','Daylight Sensor','BMS / DALI']},
+     {key:'notes',label:'Notes'}],
+    state.lighting.fixtures, {newRow:()=>({area:'',fixtureType:'',qty:1,wattage:'',control:'Manual Switch',notes:''})});
+  renderEnergyCalc(document.getElementById('lightEnergyCalc'), state.lighting.energyCalc, refreshBadges);
+  renderECMs(document.getElementById('lightEcms'), state.lighting.ecms, 'Lighting', refreshBadges);
+}
+
+/* ---------- Page 4: Other Services ---------- */
+function renderOtherPage(){
+  const el = document.getElementById('page-other');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">🧰</span><div><h2>Other Building Services</h2><p class="desc">Add Domestic Water Pumping, Elevators/Escalators, Building Envelope, Solar PV, or Street Lighting.</p></div></div>
+        <button class="btn btn-primary" id="addServiceBtn">+ Add Service</button>
+      </div>
+    </div>
+    <div id="otherServicesList"></div>
+  `;
+  document.getElementById('addServiceBtn').addEventListener('click',()=>{
+    state.other.services.push({id:uid(), name:'Domestic Water & Booster Pumps', equipment:[], energyCalc:[], ecms:[]});
+    markDirty(); renderOtherPage();
+  });
+  const list = document.getElementById('otherServicesList');
+  list.innerHTML = state.other.services.map((s,idx)=>`
+    <div class="subservice" data-i="${idx}">
+      <div class="subservice-head">
+        <input class="name" data-i="${idx}" value="${esc(s.name)}">
+        <button class="btn btn-danger btn-sm" data-act="delsvc" data-i="${idx}">Remove Service</button>
+      </div>
+      <h3>Equipment Survey</h3>
+      <div class="eqwrap" data-i="${idx}"></div>
+      <h3 style="margin-top:14px;">Energy Consumption Calculator</h3>
+      <div class="ecwrap" data-i="${idx}"></div>
+      <h3 style="margin-top:14px;">Energy Efficiency Measures</h3>
+      <div class="ecmwrap" data-i="${idx}"></div>
+    </div>
+  `).join('') || '<div class="card"><p class="small-note">No additional services added yet. Click "+ Add Service" above to add Domestic Water, Elevators, Envelope, or Solar PV.</p></div>';
+
+  list.querySelectorAll('input.name').forEach(inp=>{
+    inp.addEventListener('input',()=>{ state.other.services[+inp.dataset.i].name = inp.value; markDirty(); });
+  });
+  list.querySelectorAll('[data-act="delsvc"]').forEach(b=>{
+    b.addEventListener('click',()=>{ state.other.services.splice(+b.dataset.i,1); markDirty(); renderOtherPage(); });
+  });
+  state.other.services.forEach((s,idx)=>{
+    editableTable(list.querySelector(`.eqwrap[data-i="${idx}"]`), equipmentCols(), s.equipment, {newRow:()=>({device:'',qty:1,brand:'',model:'',notes:''})});
+    renderEnergyCalc(list.querySelector(`.ecwrap[data-i="${idx}"]`), s.energyCalc, refreshBadges);
+    renderECMs(list.querySelector(`.ecmwrap[data-i="${idx}"]`), s.ecms, s.name, refreshBadges);
+  });
+}
+
+/* ---------- Page 5: Energy Baseline ---------- */
+function allEnergyCalcRows(){
+  const groups = [
+    {label:'HVAC', rows: state.hvac.energyCalc},
+    {label:'Lighting', rows: state.lighting.energyCalc},
+    ...state.other.services.map(s=>({label:s.name, rows: s.energyCalc}))
+  ];
+  const out=[];
+  groups.forEach(g=>g.rows.forEach(r=>{
+    const base = num(r.ratedKW)*num(r.qty,1);
+    const eff = r.hasVFD ? base*Math.pow(num(r.vfdSpeedPct,100)/100,3) : base*(num(r.loadPct,100)/100);
+    out.push({section:g.label, name:r.name, annualKWh: eff*num(r.hoursDay)*num(r.daysYear)});
+  }));
+  return out;
+}
+function getBuildingAnnualConsumption(){
+  const metered = state.consumption.electricity.reduce((s,r)=>s+Math.max(0,num(r.current)-num(r.previous)),0);
+  const calculated = allEnergyCalcRows().reduce((s,r)=>s+num(r.annualKWh),0);
+  const monthlyBench = state.benchmark.monthly.reduce((s,r)=>s+num(r.energyKWh),0);
+  let used, source;
+  if(monthlyBench>0){ used=monthlyBench; source='metered'; }
+  else if(metered>0){ used=metered; source='metered'; }
+  else if(calculated>0){ used=calculated; source='calculated'; }
+  else { used=0; source='none'; }
+  return {metered: Math.max(metered, monthlyBench), calculated, used, source};
+}
+
+function renderConsumptionPage(){
+  const el = document.getElementById('page-consumption');
+  const base = getBuildingAnnualConsumption();
+  const rows = allEnergyCalcRows();
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">📐</span><div><h2>Building Energy Baseline</h2><p class="desc">Combines utility meter bills and bottom-up engineering equipment calculations.</p></div></div></div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="lbl">Metered Annual Consumption</div><div class="val">${fmt(base.metered,0)}</div><div class="sub">kWh/yr</div></div>
+        <div class="kpi"><div class="lbl">Calculated Equipment Load</div><div class="val">${fmt(base.calculated,0)}</div><div class="sub">kWh/yr (from HVAC &amp; Lighting)</div></div>
+        <div class="kpi"><div class="lbl">Active Baseline for EUI &amp; AI</div><div class="val">${fmt(base.used,0)} kWh</div>
+          <div class="sub"><span class="source-pill ${base.source}">${base.source}</span></div></div>
+        <div class="kpi"><div class="lbl">Annual Baseline Energy Cost</div><div class="val">${fmtMoney(base.used * num(state.project.energyRate,0.44))}</div><div class="sub">@ ${state.project.energyRate} ${state.project.currency}/kWh</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">🧮</span><div><h2>Bottom-Up Calculated Breakdown (HVAC, Lighting &amp; Services)</h2></div></div></div>
+      <div class="table-wrap"><table class="edit-table">
+        <thead><tr><th>Section</th><th>Equipment / System</th><th>Annual Energy (kWh)</th><th>Share of Calculated Load</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr><td class="readonly">${esc(r.section)}</td><td class="readonly">${esc(r.name||'(unnamed)')}</td><td class="readonly">${fmt(r.annualKWh,0)}</td><td class="readonly">${base.calculated>0?pct((r.annualKWh/base.calculated)*100,1):'—'}</td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="2" style="text-align:right">Total Bottom-Up Calculated</td><td>${fmt(base.calculated,0)} kWh</td><td>100%</td></tr></tfoot>
+      </table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">🧾</span><h2>Installed Sub-Meters (PMU &amp; BTU)</h2></div></div>
+      <h3>Electrical Power Monitoring Units (PMU)</h3><div id="pmuTable"></div>
+      <h3 style="margin-top:14px;">Chilled Water Thermal Energy Meters (BTU)</h3><div id="btuTable"></div>
+    </div>
+  `;
+  const meterCols = [{key:'ref',label:'Meter Reference'},{key:'description',label:'Description'},{key:'serial',label:'Serial No.'},{key:'location',label:'Location'}];
+  editableTable(document.getElementById('pmuTable'), meterCols, state.consumption.pmuMeters, {newRow:()=>({ref:'',description:'',serial:'',location:''})});
+  editableTable(document.getElementById('btuTable'), meterCols, state.consumption.btuMeters, {newRow:()=>({ref:'',description:'',serial:'',location:''})});
+}
+
+/* ---------- Page 6: Benchmarking ---------- */
+let benchChart=null;
+function renderBenchmarkPage(){
+  const el = document.getElementById('page-benchmark');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">📊</span><div><h2>Benchmarking — EUI &amp; WUI</h2><p class="desc">Compare site Energy Use Intensity (kWh/m²/yr) and Water Use Intensity (L/m²/yr) against Emirates Green Building Council / ASHRAE benchmarks.</p></div></div></div>
+      <div class="grid grid-3">
+        <div class="field"><label>Low Consumer EUI (kWh/m²/yr)</label><input type="number" data-path="benchmark.lowEUI" value="${state.benchmark.lowEUI}"></div>
+        <div class="field"><label>Average Consumer EUI</label><input type="number" data-path="benchmark.avgEUI" value="${state.benchmark.avgEUI}"></div>
+        <div class="field"><label>High Consumer EUI</label><input type="number" data-path="benchmark.highEUI" value="${state.benchmark.highEUI}"></div>
+      </div>
+    </div>
+    <div class="kpi-row" id="benchKpis"></div>
+    <div class="chart-box"><h3>Site EUI vs Regional Benchmarks (kWh/m²/yr)</h3><canvas id="euiChart"></canvas></div>
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">📅</span><h2>Monthly Energy &amp; Water Consumption Log</h2></div></div>
+      <div id="benchMonthly"></div>
+    </div>
+  `;
+  el.querySelectorAll('[data-path]').forEach(inp=>{
+    inp.addEventListener('input',()=>{ setPath(state, inp.dataset.path, parseFloat(inp.value)||0); markDirty(); computeBenchKpis(); drawBenchChart(); });
+  });
+  editableTable(document.getElementById('benchMonthly'),
+    [{key:'month',label:'Month'},{key:'energyKWh',label:'Energy (kWh/month)',type:'number'},{key:'waterL',label:'Water (L/month)',type:'number'},
+     {key:'gcfa',label:'Gross Area (m²)',type:'number'},
+     {key:'eui',label:'Annualized EUI (kWh/m²/yr)',readonly:true,format:r=>r.gcfa?fmt(num(r.energyKWh)*12/num(r.gcfa),1):'—'}],
+    state.benchmark.monthly, {onChange:()=>{computeBenchKpis(); drawBenchChart();}});
+  computeBenchKpis(); drawBenchChart();
+}
+
+function computeBenchKpis(){
+  const rows = state.benchmark.monthly;
+  const monthlyE = rows.reduce((s,r)=>s+num(r.energyKWh),0);
+  const baseline = getBuildingAnnualConsumption();
+  const totalE = monthlyE>0 ? monthlyE : baseline.used;
+  const totalW = rows.reduce((s,r)=>s+num(r.waterL),0);
+  const gcfa = num(state.project.grossArea) || 35000;
+  const eui = gcfa && totalE? totalE/gcfa : null;
+  const wui = gcfa && totalW? totalW/gcfa : null;
+  const box = document.getElementById('benchKpis');
+  if(!box) return;
+  function ratingPill(v, low, avg, high){
+    if(v===null) return '<span class="pill pill-warn">No data</span>';
+    if(v<=low) return '<span class="pill pill-good">Efficient (Best-in-Class)</span>';
+    if(v<=avg) return '<span class="pill pill-good">Better than Average</span>';
+    if(v<=high) return '<span class="pill pill-warn">Above Average</span>';
+    return '<span class="pill pill-bad">High Consumer</span>';
+  }
+  box.innerHTML = `
+    <div class="kpi"><div class="lbl">Site Energy Use Intensity (EUI)</div><div class="val">${eui?fmt(eui,1):'—'}</div><div class="sub">kWh/m²/yr ${ratingPill(eui,state.benchmark.lowEUI,state.benchmark.avgEUI,state.benchmark.highEUI)}</div></div>
+    <div class="kpi"><div class="lbl">Site Water Use Intensity (WUI)</div><div class="val">${wui?fmt(wui,0):'—'}</div><div class="sub">L/m²/yr ${ratingPill(wui,state.benchmark.lowWUI,state.benchmark.avgWUI,state.benchmark.highWUI)}</div></div>
+    <div class="kpi"><div class="lbl">Total Annual Electricity</div><div class="val">${fmt(totalE,0)}</div><div class="sub">kWh / year</div></div>
+    <div class="kpi"><div class="lbl">Gross Conditioned Area</div><div class="val">${fmt(gcfa,0)}</div><div class="sub">m²</div></div>
+  `;
+}
+
+function drawBenchChart(){
+  const ctx = document.getElementById('euiChart'); if(!ctx || !window.Chart) return;
+  const baseline = getBuildingAnnualConsumption();
+  const gcfa = num(state.project.grossArea) || 35000;
+  const eui = gcfa? +(baseline.used/gcfa).toFixed(1) : 0;
+  const ecmSavKWh = allECMs().reduce((s,e)=>s+num(e.annualSavingsKWh),0);
+  const postEui = gcfa? +((Math.max(0, baseline.used - ecmSavKWh))/gcfa).toFixed(1) : eui;
+
+  if(benchChart) benchChart.destroy();
+  benchChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:['Low Consumer Benchmark','Average Benchmark','High Consumer Benchmark','Current Site EUI','Post-ECM Target EUI'],
+      datasets:[{
+        label:'EUI (kWh/m²/yr)',
+        data:[state.benchmark.lowEUI, state.benchmark.avgEUI, state.benchmark.highEUI, eui, postEui],
+        backgroundColor:['#9fd8de','#5bb7c2','#c9820f','#b3402f','#1f8a4c']
+      }]
+    },
+    options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+  });
+}
+
+/* ---------- Page 7: Cost Estimation ---------- */
+function costEstimationTotal(){
+  return state.costEstimation.items.reduce((s,r)=>{
+    const cost = r.level==='H'?num(r.high):r.level==='M'?num(r.med):num(r.low);
+    return s + num(r.qty,1)*cost;
+  },0);
+}
+function renderCostingPage(){
+  const el = document.getElementById('page-costing');
+  const isAdmin = currentUser.role==='admin';
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div class="section-title"><span class="icon">💰</span><div><h2>Equipment Retrofit Cost Estimation Matrix</h2>
+        <p class="desc">Configure unit costs for High / Medium / Low retrofit scopes. Quantities and saving levels automatically compute the total Capex investment.</p></div></div>
+      </div>
+      <div id="costTable"></div>
+    </div>
+  `;
+  const container = document.getElementById('costTable');
+  const rows = state.costEstimation.items;
+  function levelCost(r){ return r.level==='H'?num(r.high):r.level==='M'?num(r.med):num(r.low); }
+  function draw(){
+    rows.forEach(r=>{ r.total = num(r.qty,1)*levelCost(r); });
+    let head = `<th>#</th><th>Equipment / Retrofit Item</th><th>Qty</th><th>Scope / Saving Level</th>`;
+    if(isAdmin) head += `<th>High Scope Unit Cost</th><th>Medium Scope Unit Cost</th><th>Low Scope Unit Cost</th>`;
+    head += `<th>Line Total</th><th></th>`;
+    const levelOpts = r=>['H','M','L'].map(v=>`<option value="${v}" ${r.level===v?'selected':''}>${v==='H'?'High (Full Replacement/Deep Retrofit)':v==='M'?'Medium (VFD / Controls Upgrade)':'Low (Optimization / Sensor Tuning)'}</option>`).join('');
+    let body = rows.map((r,i)=>{
+      let row = `<tr data-i="${i}"><td class="readonly">${i+1}</td>
+        <td><input data-k="equipment" value="${esc(r.equipment)}"></td>
+        <td><input type="number" data-k="qty" value="${r.qty}" style="width:70px"></td>
+        <td><select data-k="level">${levelOpts(r)}</select></td>`;
+      if(isAdmin) row += `<td><input type="number" data-k="high" value="${r.high||0}"></td><td><input type="number" data-k="med" value="${r.med||0}"></td><td><input type="number" data-k="low" value="${r.low||0}"></td>`;
+      row += `<td class="readonly">${fmtMoney(r.total)}</td><td><button class="btn-icon danger" data-act="del" data-i="${i}">✕</button></td></tr>`;
+      return row;
+    }).join('');
+    const grandTotal = rows.reduce((s,r)=>s+num(r.total),0);
+    container.innerHTML = `<div class="table-wrap"><table class="edit-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody>
+      <tfoot><tr><td colspan="${isAdmin?7:4}" style="text-align:right">Grand Total Estimated Retrofit Capex</td><td colspan="2">${fmtMoney(grandTotal)}</td></tr></tfoot>
+      </table></div><button class="btn-add" data-act="add">+ Add Cost Line Item</button>`;
+    container.querySelectorAll('tbody tr').forEach(tr=>{
+      const i=+tr.dataset.i;
+      tr.querySelectorAll('[data-k]').forEach(inp=>{
+        const k=inp.dataset.k;
+        const ev = inp.tagName==='SELECT'?'change':'input';
+        inp.addEventListener(ev,()=>{
+          rows[i][k]= inp.type==='number'? (inp.value===''?'':parseFloat(inp.value)) : inp.value;
+          draw(); markDirty();
+        });
+      });
+      const delBtn = tr.querySelector('[data-act="del"]');
+      if(delBtn) delBtn.addEventListener('click',()=>{ rows.splice(i,1); draw(); markDirty(); });
+    });
+    container.querySelector('[data-act="add"]').addEventListener('click',()=>{
+      rows.push({id:uid(), equipment:'New Retrofit Package', qty:1, level:'M', high:25000, med:15000, low:8000});
+      draw(); markDirty();
+    });
+  }
+  draw();
+}
+
+/* ---------- Page 8: AI ECM Recommender Studio ---------- */
+async function renderAIPage(){
+  const el = document.getElementById('page-ai');
+  const base = getBuildingAnnualConsumption();
+  const deltaT = (num(state.hvac.performance.returnTemp)-num(state.hvac.performance.supplyTemp)).toFixed(1);
+
+  el.innerHTML = `
+    <div class="card" style="border-top:3px solid var(--purple);">
+      <div class="card-head">
+        <div class="section-title">
+          <span class="icon" style="background:var(--purple-light);color:var(--purple);">✨</span>
+          <div>
+            <h2>AI Energy Optimization &amp; ECM Recommender</h2>
+            <p class="desc">Analyzes your building parameters, HVAC chiller plant, pumping configuration, Delta-T, and lighting loads to recommend the highest-ROI Energy Conservation Measures (ECMs) with full financial modeling.</p>
+          </div>
+        </div>
+        <div class="two-col-actions">
+          <button class="btn btn-ai" id="runAiBtn">⚡ Analyze Building &amp; Suggest Best ECMs</button>
+          <button class="btn btn-primary" id="applyAllAiBtn" style="${lastAIRecommendations?'':'display:none;'}">➕ Apply All Recommended ECMs to Proposal</button>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi"><div class="lbl">Target Building</div><div class="val" style="font-size:16px;">${esc(state.project.name||'Unnamed')}</div><div class="sub">${esc(state.project.buildingType)} • ${fmt(num(state.project.grossArea),0)} m²</div></div>
+        <div class="kpi"><div class="lbl">Baseline Consumption</div><div class="val" style="font-size:16px;">${fmt(base.used,0)} kWh/yr</div><div class="sub">EUI: ${fmt(base.used/Math.max(1,num(state.project.grossArea,35000)),1)} kWh/m²/yr</div></div>
+        <div class="kpi"><div class="lbl">Measured CHW Delta-T</div><div class="val" style="font-size:16px;">${deltaT} °C</div><div class="sub">${deltaT<5.0?'Low Delta-T Syndrome Detected':'Normal Range'}</div></div>
+        <div class="kpi"><div class="lbl">Electricity Tariff</div><div class="val" style="font-size:16px;">${state.project.currency} ${state.project.energyRate}/kWh</div><div class="sub">Discount Rate: ${state.project.discountRate}%</div></div>
+      </div>
+    </div>
+
+    <div id="aiResultsContainer"></div>
+  `;
+
+  document.getElementById('runAiBtn').addEventListener('click', runAIAnalysis);
+  document.getElementById('applyAllAiBtn').addEventListener('click', ()=>{
+    if(!lastAIRecommendations) return;
+    applyRecommendedECMs(lastAIRecommendations.recommendations);
+  });
+
+  if(lastAIRecommendations){
+    renderAIResults(lastAIRecommendations);
+  } else {
+    runAIAnalysis();
+  }
+}
+
+async function runAIAnalysis(){
+  const container = document.getElementById('aiResultsContainer');
+  const btn = document.getElementById('runAiBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Analyzing Building & Computing ROI...'; }
+  container.innerHTML = `<div class="card" style="text-align:center;padding:40px 20px;">
+    <h3 style="color:var(--purple);">⚙️ Running Building Physics &amp; AI Optimization Engine...</h3>
+    <p>Evaluating Chiller Plant sequencing, Affinity Law VFD pumping, FAHU Demand-Controlled Ventilation, PICV Delta-T recovery, and LED retrofits...</p>
+  </div>`;
+
+  const base = getBuildingAnnualConsumption();
+  const payload = {
+    project_name: state.project.name || 'Commercial Building',
+    building_type: state.project.buildingType || 'Shopping Mall',
+    gross_area_m2: num(state.project.grossArea, 35000),
+    stories: num(state.project.stories, 4),
+    city: state.project.city || 'Dubai, UAE',
+    currency: state.project.currency || 'AED',
+    energy_rate: num(state.project.energyRate, 0.44),
+    discount_rate: num(state.project.discountRate, 8.0),
+    baseline_kwh: base.used,
+    delta_t_c: num(state.hvac.performance.returnTemp) - num(state.hvac.performance.supplyTemp)
+  };
+
+  try {
+    const res = await fetch('/api/ai/recommend-ecm', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    lastAIRecommendations = data;
+    const applyAllBtn = document.getElementById('applyAllAiBtn');
+    if(applyAllBtn) applyAllBtn.style.display = '';
+    renderAIResults(data);
+  } catch(e){
+    container.innerHTML = `<div class="card"><p style="color:var(--red);">Error communicating with local backend: ${esc(e.message)}</p></div>`;
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = '⚡ Re-Run AI Optimization Analysis'; }
+  }
+}
+
+function renderAIResults(data){
+  const container = document.getElementById('aiResultsContainer');
+  if(!container) return;
+  const cur = state.project.currency || 'AED';
+
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div class="section-title"><span class="icon">📊</span><div><h2>Recommended Optimization Portfolio Summary</h2><p class="desc">Generated by: <b>${esc(data.model_used)}</b></p></div></div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="lbl">Total Recommended Capex</div><div class="val">${fmtMoney(data.total_estimated_capex)}</div><div class="sub">${data.recommendations.length} High-Impact Measures</div></div>
+        <div class="kpi"><div class="lbl">Expected Annual Savings</div><div class="val">${fmtMoney(data.total_annual_savings_cost)}</div><div class="sub">${fmt(data.total_annual_savings_kwh,0)} kWh/yr saved</div></div>
+        <div class="kpi"><div class="lbl">Blended Simple Payback</div><div class="val">${fmt(data.blended_payback_years,1)} yrs</div><div class="sub">Target: &lt; 3.0 yrs</div></div>
+        <div class="kpi"><div class="lbl">Portfolio ROI (10-Yr)</div><div class="val">${pct(data.portfolio_roi_pct,0)}</div><div class="sub">NPV: ${fmtMoney(data.portfolio_npv)}</div></div>
+        <div class="kpi"><div class="lbl">CO₂ Abatement</div><div class="val">${fmt(data.portfolio_co2_tons,1)} t</div><div class="sub">Tons CO₂e / year</div></div>
+      </div>
+
+      <div style="background:var(--teal-light);border-left:4px solid var(--teal);padding:14px 16px;border-radius:6px;margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <b style="color:var(--teal-darker);font-size:13px;text-transform:uppercase;">AI Executive Proposal Narrative</b>
+          <button class="btn btn-sm btn-ghost" id="copyExecSumBtn">📋 Copy to Proposal Report Notes</button>
+        </div>
+        <p style="color:var(--ink);white-space:pre-line;margin:0;font-size:13.5px;">${esc(data.executive_summary)}</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="section-title"><span class="icon">💡</span><div><h2>Detailed ECM Recommendations (Ranked by ROI &amp; Payback)</h2><p class="desc">Click "+ Add to Proposal" on any measure to include it in your active audit and financial report.</p></div></div></div>
+      <div id="aiEcmList">
+        ${data.recommendations.map((r,idx)=>`
+          <div class="ai-rec-card" data-idx="${idx}">
+            <div class="ai-rec-head">
+              <div>
+                <span class="pill pill-ai">${esc(r.category)}</span>
+                <span class="pill ${r.priority==='High'?'pill-good':'pill-warn'}" style="margin-left:6px;">${esc(r.priority)} Priority</span>
+                <div class="ai-rec-title" style="margin-top:6px;">${idx+1}. ${esc(r.title)}</div>
+              </div>
+              <button class="btn btn-primary btn-sm" data-act="add-single" data-idx="${idx}">➕ Add to Proposal</button>
+            </div>
+            <p style="margin:4px 0;">${esc(r.description)}</p>
+            <div class="ai-rationale"><b>Engineering Rationale:</b> ${esc(r.technical_rationale)}</div>
+            <ul class="ai-steps">${r.implementation_steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>
+            <div class="ecm-metrics">
+              <div class="m"><div class="lbl">Est. Investment</div><div class="val">${fmtMoney(r.estimated_investment)}</div></div>
+              <div class="m"><div class="lbl">Energy Savings</div><div class="val">${fmt(r.expected_savings_kwh,0)} kWh</div></div>
+              <div class="m"><div class="lbl">Cost Savings / Yr</div><div class="val">${fmtMoney(r.expected_savings_cost)}</div></div>
+              <div class="m"><div class="lbl">Simple Payback</div><div class="val" style="color:var(--green);">${fmt(r.simple_payback_years,1)} yrs</div></div>
+              <div class="m"><div class="lbl">ROI (Life)</div><div class="val">${pct(r.roi_pct,0)}</div></div>
+              <div class="m"><div class="lbl">Net Present Value</div><div class="val">${fmtMoney(r.npv)}</div></div>
+              <div class="m"><div class="lbl">IRR</div><div class="val">${r.irr_pct?pct(r.irr_pct,1):'—'}</div></div>
+              <div class="m"><div class="lbl">CO₂ Saved</div><div class="val">${fmt(r.annual_co2_reduction_tons,1)} t/yr</div></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('copyExecSumBtn').addEventListener('click', ()=>{
+    state.project.notes = data.executive_summary;
+    markDirty();
+    showToast('✅ Executive Summary copied to Proposal Report Notes!');
+  });
+
+  container.querySelectorAll('[data-act="add-single"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const rec = data.recommendations[+btn.dataset.idx];
+      applyRecommendedECMs([rec]);
+      btn.textContent = '✓ Added to Proposal';
+      btn.disabled = true;
+    });
+  });
+}
+
+function applyRecommendedECMs(recs){
+  let added = 0;
+  recs.forEach(r=>{
+    const ecmObj = {
+      id: uid(),
+      description: r.title,
+      category: r.category,
+      investment: r.estimated_investment,
+      annualSavingsKWh: r.expected_savings_kwh,
+      energyRate: state.project.energyRate || 0.44,
+      annualSavingsAED: r.expected_savings_cost,
+      manualSavings: false,
+      lifeYears: 10,
+      discountRate: state.project.discountRate || 8,
+      notes: r.technical_rationale,
+      createdBy: 'AI Engine (Qwen2.5-32B)',
+      createdAt: Date.now()
+    };
+    computeSingleECM(ecmObj);
+    if(r.category.toLowerCase().includes('lighting')){
+      const exists = state.lighting.ecms.some(x=>x.description===r.title);
+      if(!exists){ state.lighting.ecms.push(ecmObj); added++; }
+    } else {
+      const exists = state.hvac.ecms.some(x=>x.description===r.title);
+      if(!exists){ state.hvac.ecms.push(ecmObj); added++; }
+    }
+  });
+  refreshBadges();
+  markDirty();
+  showToast(`✅ Added ${added} ECM(s) to your Proposal! View them in Tab 9 (ECM & ROI Summary).`);
+}
+
+/* ---------- Page 9: ECM & ROI Summary ---------- */
+function allECMs(){
+  const groups = [
+    {label:'HVAC', ecms: state.hvac.ecms},
+    {label:'Lighting', ecms: state.lighting.ecms},
+    ...state.other.services.map(s=>({label:s.name, ecms: s.ecms}))
+  ];
+  const out=[];
+  groups.forEach(g=>g.ecms.forEach(e=>{
+    computeSingleECM(e);
+    out.push(Object.assign({_section:g.label}, e));
+  }));
+  return out;
+}
+
+let summaryChart1=null, summaryChart2=null;
+function renderSummaryPage(){
+  const el = document.getElementById('page-summary');
+  const ecms = allECMs();
+  const sumECMInv = ecms.reduce((s,e)=>s+num(e.investment),0);
+  const costEstTotal = costEstimationTotal();
+  const totalInv = sumECMInv > 0 ? sumECMInv : costEstTotal;
+  const totalAnnualSavKWh = ecms.reduce((s,e)=>s+num(e.annualSavingsKWh),0);
+  const totalAnnualSav = ecms.reduce((s,e)=>s+num(e._annualSavingsAED),0);
+  const blendedPayback = totalAnnualSav>0? totalInv/totalAnnualSav : null;
+  const maxLife = ecms.length? Math.max(...ecms.map(e=>num(e.lifeYears,10))) : 10;
+  const rate = num(state.project.discountRate, 8);
+  const portfolioCF = [-totalInv];
+  for(let y=1;y<=maxLife;y++){
+    let yearSav=0;
+    ecms.forEach(e=>{ if(y<=num(e.lifeYears,10)) yearSav+=num(e._annualSavingsAED); });
+    portfolioCF.push(yearSav);
+  }
+  const npv = Fin.npv(rate, portfolioCF);
+  const irr = Fin.irr(portfolioCF);
+  const dpp = Fin.discountedPayback(rate, portfolioCF);
+  const roi = Fin.roi(totalInv, portfolioCF.slice(1).reduce((s,v)=>s+v,0));
+  const baseline = getBuildingAnnualConsumption();
+  const savingPctOfBaseline = baseline.used > 0 ? (totalAnnualSavKWh / baseline.used) * 100 : null;
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div class="section-title"><span class="icon">📈</span><div><h2>Executive Portfolio Summary — All Energy Conservation Measures</h2><p class="desc">Consolidated financial &amp; energy impact across HVAC, Lighting, and Other Services.</p></div></div>
+        <div class="two-col-actions">
+          ${ecms.length===0 ? `<button class="btn btn-ai" id="sumGoAiBtn">✨ Auto-Populate ECMs with AI</button>` : ''}
+          <button class="btn btn-primary" id="sumGoReportBtn">🖨️ Preview &amp; Export Proposal PDF</button>
+        </div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="lbl">Proposed ECMs</div><div class="val">${ecms.length}</div><div class="sub">${savingPctOfBaseline?pct(savingPctOfBaseline,1)+' of baseline saved':'Measures'}</div></div>
+        <div class="kpi"><div class="lbl">Total Capex Investment</div><div class="val">${fmtMoney(totalInv)}</div><div class="sub">Turnkey implementation</div></div>
+        <div class="kpi"><div class="lbl">Annual Energy Savings</div><div class="val">${fmt(totalAnnualSavKWh,0)}</div><div class="sub">kWh / year</div></div>
+        <div class="kpi"><div class="lbl">Annual Cost Savings</div><div class="val">${fmtMoney(totalAnnualSav)}</div><div class="sub">per year</div></div>
+        <div class="kpi"><div class="lbl">Simple Payback Period</div><div class="val" style="color:var(--green);">${blendedPayback?fmt(blendedPayback,1)+' yrs':'—'}</div><div class="sub">Disc. Payback: ${dpp!==null?fmt(dpp,1)+' yrs':'—'}</div></div>
+        <div class="kpi"><div class="lbl">Portfolio ROI (Over Life)</div><div class="val">${roi!==null?pct(roi,0):'—'}</div><div class="sub">Over ${maxLife} years</div></div>
+        <div class="kpi"><div class="lbl">Portfolio NPV (${rate}%)</div><div class="val">${fmtMoney(npv)}</div><div class="sub">Net Present Value</div></div>
+        <div class="kpi"><div class="lbl">Portfolio IRR</div><div class="val">${irr!==null?pct(irr,1):'—'}</div><div class="sub">Internal Rate of Return</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap"><table class="edit-table">
+        <thead><tr><th>System</th><th>Energy Conservation Measure (ECM)</th><th>Category</th><th>Investment</th><th>Savings (kWh/yr)</th><th>Annual Cost Savings</th><th>Simple Payback</th><th>ROI</th><th>NPV</th><th>IRR</th></tr></thead>
+        <tbody>
+        ${ecms.map(e=>`<tr>
+          <td class="readonly">${esc(e._section)}</td>
+          <td class="readonly"><b>${esc(e.description||'(untitled)')}</b></td>
+          <td class="readonly">${esc(e.category||'')}</td>
+          <td class="readonly">${fmtMoney(num(e.investment))}</td>
+          <td class="readonly">${fmt(num(e.annualSavingsKWh),0)}</td>
+          <td class="readonly">${fmtMoney(e._annualSavingsAED)}</td>
+          <td class="readonly"><span class="pill pill-good">${e._simplePayback?fmt(e._simplePayback,1)+' yrs':'—'}</span></td>
+          <td class="readonly">${e._roi!==null?pct(e._roi,0):'—'}</td>
+          <td class="readonly">${fmtMoney(e._npv)}</td>
+          <td class="readonly">${e._irr!==null?pct(e._irr,1):'—'}</td>
+        </tr>`).join('') || '<tr><td colspan="10" class="readonly" style="text-align:center;padding:20px;">No ECMs added yet. Click <b>"✨ 8. AI ECM Recommender"</b> tab above to automatically generate and add measures!</td></tr>'}
+        </tbody>
+        ${ecms.length ? `<tfoot><tr><td colspan="3" style="text-align:right">Total Portfolio</td><td>${fmtMoney(totalInv)}</td><td>${fmt(totalAnnualSavKWh,0)} kWh</td><td>${fmtMoney(totalAnnualSav)}</td><td>${blendedPayback?fmt(blendedPayback,1)+' yrs':'—'}</td><td>${roi!==null?pct(roi,0):'—'}</td><td>${fmtMoney(npv)}</td><td>${irr!==null?pct(irr,1):'—'}</td></tr></tfoot>` : ''}
+      </table></div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="chart-box"><h3>Investment vs. Annual Cost Savings by Measure</h3><canvas id="summaryChart1"></canvas></div>
+      <div class="chart-box"><h3>10-Year Cumulative Discounted Cash Flow (${state.project.currency})</h3><canvas id="summaryChart2"></canvas></div>
+    </div>
+  `;
+
+  const goAi = document.getElementById('sumGoAiBtn');
+  if(goAi) goAi.addEventListener('click', ()=>showPage('ai'));
+  document.getElementById('sumGoReportBtn').addEventListener('click', ()=>showPage('report'));
+
+  if(window.Chart && ecms.length){
+    const ctx1 = document.getElementById('summaryChart1');
+    if(summaryChart1) summaryChart1.destroy();
+    summaryChart1 = new Chart(ctx1,{
+      type:'bar',
+      data:{
+        labels:ecms.map((e,i)=>'ECM-'+(i+1)),
+        datasets:[
+          {label:'Capex Investment',data:ecms.map(e=>num(e.investment)),backgroundColor:'#0c5c66'},
+          {label:'Annual Cost Savings',data:ecms.map(e=>e._annualSavingsAED),backgroundColor:'#1596a9'}
+        ]
+      },
+      options:{responsive:true,scales:{y:{beginAtZero:true}}}
+    });
+
+    const ctx2 = document.getElementById('summaryChart2');
+    if(summaryChart2) summaryChart2.destroy();
+    let cum=0; const dccf=[];
+    for(let t=0;t<portfolioCF.length;t++){
+      cum += portfolioCF[t]/Math.pow(1+rate/100,t);
+      dccf.push(Math.round(cum));
+    }
+    summaryChart2 = new Chart(ctx2,{
+      type:'line',
+      data:{
+        labels:['Yr 0',...Array.from({length:maxLife},(_,i)=>'Yr '+(i+1))],
+        datasets:[{
+          label:'Cumulative Net Cash Flow',
+          data:dccf,
+          borderColor:'#1596a9',
+          backgroundColor:'rgba(21,150,169,.15)',
+          fill:true,
+          tension:.25
+        }]
+      },
+      options:{responsive:true}
+    });
+  }
+}
+
+/* ---------- Page 10: Proposal Report / Export ---------- */
+function renderReportPage(){
+  const el = document.getElementById('page-report');
+  el.innerHTML = `
+    <div class="card no-print">
+      <div class="card-head">
+        <div class="section-title"><span class="icon">🖨️</span><div><h2>Client Proposal Report &amp; PDF Export</h2><p class="desc">Formatted executive energy optimization proposal with SETs branding, ECM financial table, ROI, NPV, IRR, and Payback analysis.</p></div></div>
+        <div class="two-col-actions">
+          <button class="btn btn-primary" id="exportBtn">🖨️ Print / Save Proposal as PDF</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="reportPreview" style="padding:30px;"></div>
+  `;
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const area = document.getElementById('reportPrintArea');
+    buildReportHTML(area);
+    window.print();
+  });
+  buildReportHTML(document.getElementById('reportPreview'));
+}
+
+function buildReportHTML(target){
+  const ecms = allECMs();
+  const sumECMInv = ecms.reduce((s,e)=>s+num(e.investment),0);
+  const costEstTotal = costEstimationTotal();
+  const totalInv = sumECMInv > 0 ? sumECMInv : costEstTotal;
+  const totalAnnualSavKWh = ecms.reduce((s,e)=>s+num(e.annualSavingsKWh),0);
+  const totalAnnualSav = ecms.reduce((s,e)=>s+num(e._annualSavingsAED),0);
+  const blendedPayback = totalAnnualSav>0? totalInv/totalAnnualSav : null;
+  const p = state.project;
+  const base = getBuildingAnnualConsumption();
+  const gcfa = num(p.grossArea, 35000);
+  const preEUI = gcfa ? (base.used / gcfa) : 0;
+  const postEUI = gcfa ? (Math.max(0, base.used - totalAnnualSavKWh) / gcfa) : 0;
+  const clientLogoImg = p.clientLogo ? `<img src="${p.clientLogo}" style="height:52px;">` : '';
+
+  target.innerHTML = `
+    <div class="report-cover">
+      <div class="logos">
+        <div class="brand-logo" style="width:54px;height:54px;font-size:18px;">SETs</div>
+        ${clientLogoImg}
+      </div>
+      <h1>${esc(p.name)||'Energy Optimization & ECM Proposal'}</h1>
+      <div class="meta">Prepared for: <b>${esc(p.client||'Valued Client')}</b> &nbsp;•&nbsp; ${esc(p.address)} &nbsp;•&nbsp; ${esc(p.city)}</div>
+      <div class="meta">Building Type: ${esc(p.buildingType)} &nbsp;•&nbsp; Gross Floor Area: ${fmt(gcfa,0)} m² &nbsp;•&nbsp; Stories: ${esc(p.stories)} &nbsp;•&nbsp; Year: ${esc(p.year)}</div>
+      <div class="meta" style="margin-top:8px;color:var(--teal-darker);font-weight:600;">Prepared by SETs — Sustainability &amp; Energy Technology Solutions</div>
+    </div>
+
+    <div class="report-section">
+      <h2>1. Executive Summary &amp; Strategic Context</h2>
+      <p style="white-space:pre-line;color:var(--ink);">${esc(p.notes) || `This Energy Optimization Proposal presents a comprehensive engineering and financial evaluation for ${esc(p.name)} (${fmt(gcfa,0)} m²). Based on the site equipment survey and baseline consumption of ${fmt(base.used,0)} kWh/yr, SETs has identified ${ecms.length} high-impact Energy Conservation Measures (ECMs) across the HVAC and Lighting systems.`}</p>
+      <div class="kpi-row" style="margin-top:14px;">
+        <div class="kpi"><div class="lbl">Baseline Consumption</div><div class="val">${fmt(base.used,0)} kWh</div><div class="sub">Pre-ECM EUI: ${fmt(preEUI,1)} kWh/m²/yr</div></div>
+        <div class="kpi"><div class="lbl">Proposed Capex</div><div class="val">${fmtMoney(totalInv)}</div><div class="sub">${ecms.length} ECMs Selected</div></div>
+        <div class="kpi"><div class="lbl">Annual Cost Savings</div><div class="val">${fmtMoney(totalAnnualSav)}</div><div class="sub">${fmt(totalAnnualSavKWh,0)} kWh/yr (${base.used>0?pct(totalAnnualSavKWh/base.used*100,1):'0%'})</div></div>
+        <div class="kpi"><div class="lbl">Blended Payback</div><div class="val">${blendedPayback?fmt(blendedPayback,1)+' yrs':'—'}</div><div class="sub">Post-ECM EUI: ${fmt(postEUI,1)} kWh/m²/yr</div></div>
+      </div>
+    </div>
+
+    <div class="report-section">
+      <h2>2. Recommended Energy Conservation Measures (ECM Financial Matrix)</h2>
+      <div class="table-wrap"><table class="edit-table">
+        <thead><tr><th>#</th><th>System</th><th>Measure Description</th><th>Category</th><th>Investment</th><th>Savings (kWh/yr)</th><th>Annual Cost Savings</th><th>Simple Payback</th><th>ROI</th><th>NPV</th><th>IRR</th></tr></thead>
+        <tbody>${ecms.map((e,i)=>`<tr>
+          <td>${i+1}</td>
+          <td>${esc(e._section)}</td>
+          <td><b>${esc(e.description||'')}</b><br><span style="font-size:11px;color:var(--ink-soft);">${esc(e.notes||'')}</span></td>
+          <td>${esc(e.category)}</td>
+          <td>${fmtMoney(num(e.investment))}</td>
+          <td>${fmt(num(e.annualSavingsKWh),0)}</td>
+          <td>${fmtMoney(e._annualSavingsAED)}</td>
+          <td><b>${e._simplePayback?fmt(e._simplePayback,1)+' yrs':'—'}</b></td>
+          <td>${e._roi!==null?pct(e._roi,0):'—'}</td>
+          <td>${fmtMoney(e._npv)}</td>
+          <td>${e._irr!==null?pct(e._irr,1):'—'}</td>
+        </tr>`).join('') || '<tr><td colspan="11">No ECMs added yet.</td></tr>'}
+        </tbody>
+        ${ecms.length ? `<tfoot><tr><td colspan="4" style="text-align:right">Total Portfolio</td><td>${fmtMoney(totalInv)}</td><td>${fmt(totalAnnualSavKWh,0)} kWh</td><td>${fmtMoney(totalAnnualSav)}</td><td>${blendedPayback?fmt(blendedPayback,1)+' yrs':'—'}</td><td colspan="3"></td></tr></tfoot>` : ''}
+      </table></div>
+    </div>
+
+    <div class="report-section">
+      <h2>3. Installed HVAC &amp; Lighting Asset Summary</h2>
+      <p><b>Chiller Plant:</b> ${state.hvac.chillerEquipment.map(c=>`${c.qty}x ${c.brand} ${c.device} (${c.notes})`).join(' • ') || 'As surveyed'}</p>
+      <p><b>Air-Side Equipment:</b> ${state.hvac.airsideUnits.map(a=>`${a.qty}x ${a.category} (${a.tag})`).join(' • ') || 'As surveyed'}</p>
+      <p><b>Chilled Water Loop:</b> Supply ${esc(state.hvac.performance.supplyTemp)}°C / Return ${esc(state.hvac.performance.returnTemp)}°C (Delta-T: ${(num(state.hvac.performance.returnTemp)-num(state.hvac.performance.supplyTemp)).toFixed(1)}°C)</p>
+    </div>
+  `;
+}
+
+/* ---------- Navigation & Initialization ---------- */
+function refreshBadges(){
+  document.getElementById('ecmCountBadge').textContent = allECMs().length;
+}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const btn = document.querySelector(`.tab-btn[data-page="${name}"]`);
+  if(btn) btn.classList.add('active');
+
+  const renderers = {
+    project:renderProjectPage, hvac:renderHvacPage, lighting:renderLightingPage,
+    other:renderOtherPage, consumption:renderConsumptionPage, benchmark:renderBenchmarkPage,
+    costing:renderCostingPage, ai:renderAIPage, summary:renderSummaryPage, report:renderReportPage
+  };
+  if(renderers[name]) renderers[name]();
+  refreshBadges();
+}
+
+function renderSessionBar(){
+  const bar = document.getElementById('sessionBar');
+  bar.innerHTML = `<span class="who">${esc(currentUser.fullName)}</span>
+    <span class="role-pill ${currentUser.role==='admin'?'admin':''}" id="roleSwitchBtn" title="Click to toggle Admin / Engineer view">${currentUser.role}</span>`;
+  document.getElementById('roleSwitchBtn').addEventListener('click', ()=>{
+    currentUser.role = currentUser.role==='admin' ? 'engineer' : 'admin';
+    renderSessionBar();
+    showToast(`Switched view mode to: ${currentUser.role.toUpperCase()}`);
+    if(document.getElementById('page-costing').classList.contains('active')) renderCostingPage();
+  });
+}
+
+function initTopbar(){
+  document.getElementById('projectTitleInput').addEventListener('input',e=>{ state.project.name=e.target.value; markDirty(); });
+  document.getElementById('clientNameInput').addEventListener('input',e=>{ state.project.client=e.target.value; markDirty(); });
+  const slot = document.getElementById('clientLogoSlot');
+  const fileInp = document.getElementById('clientLogoFile');
+  slot.addEventListener('click',()=>fileInp.click());
+  fileInp.addEventListener('change',()=>{
+    const f = fileInp.files[0]; if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{ state.project.clientLogo = reader.result; renderLogoSlot(); markDirty(); };
+    reader.readAsDataURL(f);
+  });
+  document.getElementById('loadDemoBtn').addEventListener('click', ()=>{
+    state = defaultState();
+    lastAIRecommendations = null;
+    document.getElementById('projectTitleInput').value = state.project.name;
+    document.getElementById('clientNameInput').value = state.project.client;
+    showPage('ai');
+    showToast('🏢 Loaded Demo Mall Project & Running AI ECM Analysis!');
+  });
+  document.getElementById('saveServerBtn').addEventListener('click', saveToServer);
+}
+
+function renderLogoSlot(){
+  const slot = document.getElementById('clientLogoSlot');
+  slot.innerHTML = state.project.clientLogo ? `<img src="${state.project.clientLogo}">` : '<span>Client<br>Logo</span>';
+}
+
+function init(){
+  try {
+    const saved = localStorage.getItem('sets_energy_state_v2');
+    if(saved){
+      const parsed = JSON.parse(saved);
+      state = Object.assign(defaultState(), parsed);
+    }
+  } catch(e){}
+
+  document.getElementById('projectTitleInput').value = state.project.name||'';
+  document.getElementById('clientNameInput').value = state.project.client||'';
+  renderLogoSlot();
+  initTopbar();
+  renderSessionBar();
+  checkAIHealth();
+
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>showPage(btn.dataset.page));
+  });
+  showPage('project');
+}
+
+init();
+})();
+</script>
+</body>
+</html>
+
